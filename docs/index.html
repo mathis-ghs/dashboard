@@ -436,6 +436,7 @@ dialog::backdrop{background:rgba(11,12,19,.45);-webkit-backdrop-filter:blur(8px)
 .dlg-f:empty{display:none}
 .dlg-f{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:14px var(--sp-5);border-top:1px solid var(--line)}
 fieldset{border:0;margin:0;padding:0;display:grid;gap:10px;min-width:0}
+.prov{display:grid;gap:10px;min-width:0}
 legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
 .field{display:grid;gap:4px;font-size:12px;color:var(--mut)}
 .field input,.field select{height:44px;padding-block:0;font-size:15px;color:var(--fg)}
@@ -888,10 +889,22 @@ dialog.wide .dlg-f{flex:none}
       <p class="hint">Jeton « fine-grained » limité à ce seul dépôt, permission <b>Contents : Read and write</b>. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Créer un jeton</a></p>
     </fieldset>
     <fieldset>
-      <legend>Coach IA (Gemini)</legend>
-      <label class="field">Clé API Gemini<input type="password" id="gemKey" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
-      <label class="field">Modèle<select id="gemModel"><option value="">Saisir la clé pour charger les modèles</option></select></label>
-      <p class="hint">Clé gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>. En gratuit, Google peut utiliser les échanges pour améliorer ses modèles : le coach ne reçoit ni noms d'activités, ni heures de départ, ni identifiants Strava.</p>
+      <legend>Coach IA</legend>
+      <label class="field">Fournisseur<select id="coachProv">
+        <option value="gemini">Gemini (Google AI Studio)</option>
+        <option value="groq">Groq (GroqCloud)</option>
+      </select></label>
+      <div class="prov" data-prov="gemini">
+        <label class="field">Clé API Gemini<input type="password" id="gemKey" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
+        <label class="field">Modèle<select id="gemModel"><option value="">Saisir la clé pour charger les modèles</option></select></label>
+        <p class="hint">Clé gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>. En gratuit, Google peut utiliser les échanges pour améliorer ses modèles.</p>
+      </div>
+      <div class="prov" data-prov="groq" hidden>
+        <label class="field">Clé API Groq<input type="password" id="groqKey" autocomplete="off" spellcheck="false" placeholder="gsk_…"></label>
+        <label class="field">Modèle<select id="groqModel"><option value="">Saisir la clé pour charger les modèles</option></select></label>
+        <p class="hint">Clé gratuite sur <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com</a>. Les limites gratuites se comptent en tokens par minute et le contexte du coach est volumineux : Llama 4 Scout est choisi par défaut pour cette raison.</p>
+      </div>
+      <p class="hint">Quel que soit le fournisseur, le coach ne reçoit ni noms d'activités, ni heures de départ, ni identifiants Strava.</p>
     </fieldset>
     <p class="hint">Les clés sont chiffrées avec ta phrase de passe et restent dans ce navigateur.</p>
     <p class="status" id="settingsStatus" role="status"></p>
@@ -984,7 +997,7 @@ async function fetchBlob(name) {
   return r.json();
 }
 
-/* ---------- clés (GitHub, Gemini) : chiffrées avec la phrase, dans ce navigateur ---------- */
+/* ---------- clés (GitHub, Gemini, Groq) : chiffrées avec la phrase, dans ce navigateur ---------- */
 let SECRETS = {};
 async function loadSecrets() {
   try { const s = localStorage.getItem("secrets"); SECRETS = s ? await decrypt(JSON.parse(s), PASS) : {}; } catch { SECRETS = {}; }
@@ -2069,8 +2082,11 @@ function openSettings(reason) {
   $("#ghToken").value = SECRETS.gh || "";
   $("#ghRepo").value = repoOf();
   $("#gemKey").value = SECRETS.gemini || "";
+  $("#groqKey").value = SECRETS.groq || "";
+  $("#coachProv").value = provOf(); showProv(provOf());
   $("#settingsStatus").textContent = "";
   if (SECRETS.gemini) loadModels(SECRETS.gemini, SECRETS.model).catch(() => {});
+  if (SECRETS.groq) loadGroqModels(SECRETS.groq, SECRETS.groqModel).catch(() => {});
   $("#settingsDlg").showModal();
 }
 $("#settings").addEventListener("click", () => openSettings());
@@ -2094,9 +2110,29 @@ async function loadModels(key, selected) {
 }
 $("#gemKey").addEventListener("change", e => { const k = e.target.value.trim(); if (k) loadModels(k, SECRETS.model).catch(err => $("#settingsStatus").textContent = err.message); });
 
+/* Groq : API compatible OpenAI ; les modèles audio, de modération et « compound » (sans outils personnalisés) sont écartés */
+const provOf = () => SECRETS.prov === "groq" ? "groq" : "gemini";
+const showProv = p => $$(".prov").forEach(d => d.hidden = d.dataset.prov !== p);
+$("#coachProv").addEventListener("change", e => showProv(e.target.value));
+const GROQ_PREF = ["meta-llama/llama-4-scout-17b-16e-instruct", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "moonshotai/kimi-k2-instruct"];
+async function loadGroqModels(key, selected) {
+  const sel = $("#groqModel");
+  sel.innerHTML = `<option value="">Chargement des modèles…</option>`;
+  const r = await fetch("https://api.groq.com/openai/v1/models", {headers: {Authorization: `Bearer ${key}`}});
+  if (!r.ok) { sel.innerHTML = `<option value="">Clé non valide</option>`; throw new Error(r.status === 401 ? "clé Groq refusée" : `Groq ${r.status}`); }
+  const models = ((await r.json()).data || [])
+    .filter(m => m.active !== false && !/whisper|tts|playai|orpheus|guard|compound|distil/i.test(m.id))
+    .map(m => m.id).sort();
+  if (!models.length) { sel.innerHTML = `<option value="">Aucun modèle disponible</option>`; throw new Error("aucun modèle Groq disponible pour cette clé"); }
+  const def = selected && models.includes(selected) ? selected : GROQ_PREF.find(m => models.includes(m)) || models[0];
+  sel.innerHTML = models.map(m => `<option value="${esc(m)}" ${m === def ? "selected" : ""}>${esc(m)}</option>`).join("");
+}
+$("#groqKey").addEventListener("change", e => { const k = e.target.value.trim(); if (k) loadGroqModels(k, SECRETS.groqModel).catch(err => $("#settingsStatus").textContent = err.message); });
+
 $("#saveSettings").addEventListener("click", async () => {
   const st = $("#settingsStatus"), btn = $("#saveSettings");
-  const next = {gh: $("#ghToken").value.trim(), repo: $("#ghRepo").value.trim(), gemini: $("#gemKey").value.trim(), model: $("#gemModel").value};
+  const next = {gh: $("#ghToken").value.trim(), repo: $("#ghRepo").value.trim(), gemini: $("#gemKey").value.trim(), model: $("#gemModel").value,
+    groq: $("#groqKey").value.trim(), groqModel: $("#groqModel").value, prov: $("#coachProv").value};
   btn.disabled = true; st.className = "status"; st.textContent = "Vérification…";
   try {
     if (next.gh) {
@@ -2110,6 +2146,14 @@ $("#saveSettings").addEventListener("click", async () => {
       next.model = $("#gemModel").value;
       if (!next.model) throw new Error("choisir un modèle Gemini");
     }
+    if (next.groq) {
+      if (!next.groqModel) await loadGroqModels(next.groq);
+      next.groqModel = $("#groqModel").value;
+      if (!next.groqModel) throw new Error("choisir un modèle Groq");
+    }
+    if (next.prov === "groq" && !next.groq) throw new Error("ajouter une clé Groq ou choisir Gemini");
+    /* l'historique d'une conversation n'est pas transposable d'un fournisseur à l'autre */
+    if (next.prov !== provOf()) resetCoach();
     SECRETS = next; await storeSecrets();
     st.className = "status ok"; st.textContent = "Enregistré.";
     renderDraftState(); renderCoach();
@@ -2119,12 +2163,12 @@ $("#saveSettings").addEventListener("click", async () => {
   } finally { btn.disabled = false; }
 });
 $("#clearSecrets").addEventListener("click", async () => {
-  if (!confirm("Effacer le jeton GitHub et la clé Gemini de ce navigateur ?")) return;
+  if (!confirm("Effacer le jeton GitHub et les clés du coach (Gemini, Groq) de ce navigateur ?")) return;
   SECRETS = {}; await storeSecrets(); resetCoach();
   $("#settingsDlg").close(); renderDraftState(); renderCoach(); toast("Clés effacées");
 });
 
-/* ---------- coach (Gemini, appelé depuis le navigateur) ---------- */
+/* ---------- coach (Gemini ou Groq, appelé depuis le navigateur) ---------- */
 const COACH_SYS = `Tu es le coach d'entraînement personnel d'un cycliste amateur (route, home trainer, un peu de course à pied et de renforcement). Tu réponds en français, en tutoyant, de façon concise et concrète.
 
 Données : le premier message contient un JSON avec la date du jour, le résumé de charge, la charge quotidienne (CTL = moyenne 42 j, ATL = moyenne 7 j, TSB = CTL - ATL), le volume par semaine, les activités des 8 dernières semaines et le plan (semaines identifiées par leur lundi, séances avec id, statut et minutes réalisées, règles de l'athlète, analyses). La charge vient du Strava Relative Effort : c'est un proxy, pas un TSS, ne compare pas aux valeurs PMC habituelles.
@@ -2331,10 +2375,11 @@ function addMsg(kind, html) {
 }
 
 function renderCoach() {
-  const ready = SECRETS.gemini && SECRETS.model;
+  const groqOn = provOf() === "groq";
+  const ready = groqOn ? SECRETS.groq && SECRETS.groqModel : SECRETS.gemini && SECRETS.model;
   $("#composer").hidden = !ready;
   $("#coachReset").hidden = !ready || !CHAT.length;
-  $("#coachModel").textContent = ready ? `Gemini · ${SECRETS.model.replace(/^models\//, "")}` : "";
+  $("#coachModel").textContent = !ready ? "" : groqOn ? `Groq · ${SECRETS.groqModel}` : `Gemini · ${SECRETS.model.replace(/^models\//, "")}`;
   $("#coachInput").disabled = !!PENDING || COACH_BUSY;
   $("#coachInput").placeholder = PENDING ? "Accepte ou refuse la proposition d'abord" : "Demande au coach…";
   $("#coachSend").disabled = !!PENDING || COACH_BUSY;
@@ -2345,7 +2390,7 @@ function renderCoach() {
       <div><b style="color:var(--fg)">Ton coach</b><br>Il analyse ta charge, ton volume et le plan, et ajuste les séances en s'appuyant sur la bibliothèque du livre. Chaque modification t'est proposée avant d'être appliquée.</div>
       ${ready ? "" : `<button class="btn primary" type="button" id="coachSetup">${icon("gear")}Configurer le coach</button>`}
     </div>`;
-    $("#coachSetup")?.addEventListener("click", () => openSettings("Ajoute une clé Gemini pour utiliser le coach."));
+    $("#coachSetup")?.addEventListener("click", () => openSettings("Ajoute une clé Gemini ou Groq pour utiliser le coach."));
   }
 }
 
@@ -2366,13 +2411,65 @@ async function gemini(contents) {
   return c.content;
 }
 
+/* Groq : l'historique reste au format Gemini (CHAT) et il est traduit à chaque appel */
+const lowerTypes = o => Array.isArray(o) ? o.map(lowerTypes) : o && typeof o === "object"
+  ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, k === "type" && typeof v === "string" ? v.toLowerCase() : lowerTypes(v)])) : o;
+const GROQ_TOOLS = COACH_TOOLS[0].functionDeclarations.map(f => ({type: "function", function: lowerTypes(f)}));
+function groqMessages(contents) {
+  const out = [{role: "system", content: COACH_SYS}];
+  for (const c of contents) {
+    const text = c.parts.filter(p => p.text && !p.thought).map(p => p.text).join("\n\n");
+    if (c.role === "model") {
+      const calls = c.parts.filter(p => p.functionCall).map(({functionCall: f}) =>
+        ({id: f.id, type: "function", function: {name: f.name, arguments: JSON.stringify(f.args || {})}}));
+      out.push({role: "assistant", content: text || null, ...(calls.length ? {tool_calls: calls} : {})});
+    } else {
+      for (const p of c.parts) if (p.functionResponse) out.push({role: "tool", tool_call_id: p.functionResponse.id, content: JSON.stringify(p.functionResponse.response)});
+      if (text) out.push({role: "user", content: text});
+    }
+  }
+  return out;
+}
+async function groq(contents, retry = 0) {
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", Authorization: `Bearer ${SECRETS.groq}`},
+    body: JSON.stringify({model: SECRETS.groqModel, messages: groqMessages(contents), tools: GROQ_TOOLS, temperature: 0.4})
+  });
+  if (!r.ok) {
+    let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
+    if (r.status === 401) throw new Error("Clé Groq refusée. Vérifie-la dans les réglages.");
+    if (r.status === 413 || /request too large/i.test(m)) throw new Error("Demande trop volumineuse pour la limite gratuite de ce modèle Groq. Choisis Llama 4 Scout dans les réglages.");
+    /* limite par minute : attendre le délai indiqué par Groq, deux fois au plus */
+    const wait = Math.ceil(parseFloat(r.headers.get("retry-after")) || 0);
+    if (r.status === 429 && retry < 2 && wait > 0 && wait <= 60) {
+      const note = addMsg("tool", `${icon("refresh")}Limite Groq atteinte, nouvelle tentative dans ${wait} s`);
+      await new Promise(res => setTimeout(res, wait * 1000)); note.remove();
+      return groq(contents, retry + 1);
+    }
+    if (r.status === 429) throw new Error("Limite gratuite Groq atteinte. Réessaie dans une minute ou choisis un autre modèle dans les réglages.");
+    throw new Error(`Groq ${r.status}${m ? " : " + m : ""}`);
+  }
+  const msg = (await r.json()).choices?.[0]?.message;
+  if (!msg) throw new Error("Pas de réponse du modèle.");
+  const parts = [], text = (msg.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  if (text) parts.push({text});
+  for (const t of msg.tool_calls || []) {
+    let args = {}; try { args = JSON.parse(t.function?.arguments || "{}"); } catch {}
+    parts.push({functionCall: {id: t.id, name: t.function?.name, args}});
+  }
+  if (!parts.length) throw new Error("Réponse vide du modèle.");
+  return {role: "model", parts};
+}
+const llm = contents => provOf() === "groq" ? groq(contents) : gemini(contents);
+
 const respond = (c, response) => ({functionResponse: {...(c.id ? {id: c.id} : {}), name: c.name, response}});
 async function coachRun(depth = 0) {
   COACH_BUSY = true; renderCoach();
   const typing = addMsg("ai typing", "<i></i><i></i><i></i>");
   let again = false;
   try {
-    const content = await gemini(CHAT);
+    const content = await llm(CHAT);
     CHAT.push({role: "model", parts: content.parts});
     const text = content.parts.filter(p => p.text && !p.thought).map(p => p.text).join("").trim();
     if (text) addMsg("ai", md(text));

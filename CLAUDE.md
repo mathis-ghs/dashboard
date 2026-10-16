@@ -63,7 +63,7 @@ HANDOFF.md                     Notes de passation, git-ignoré
 - Plan : `actualFor` et `statusFor` comparent le planifié au réalisé par date et sport (`findSession`, `sessionRow`). Une séance `other` ne compte que les activités hors vélo et course.
 - Édition du plan : brouillon dans `localStorage` (`loadDraft`, `saveDraft`), local au navigateur, supprimé s'il redevient identique au plan chiffré. Suppression de séance annulable via le toast. Bouton d'export `#exportPlan` qui produit un `plan.json`.
 - Préférences par navigateur dans `localStorage` : `theme` (auto/clair/sombre), `range` (période du graphe de charge). La phrase de passe n'est jamais stockée : elle reste en mémoire le temps de la session, `#lock` l'efface.
-- Réglages (`#settingsDlg`, `openSettings`) : jeton GitHub, dépôt, clé Gemini, modèle. Stockés dans `localStorage["secrets"]`, chiffrés avec la phrase (`loadSecrets`, `storeSecrets`, même format que les fichiers chiffrés).
+- Réglages (`#settingsDlg`, `openSettings`) : jeton GitHub, dépôt, fournisseur du coach (`#coachProv`), clé et modèle Gemini, clé et modèle Groq. Stockés dans `localStorage["secrets"]`, chiffrés avec la phrase (`loadSecrets`, `storeSecrets`, même format que les fichiers chiffrés).
 
 ## Bibliothèque d'entraînement (livre)
 
@@ -84,8 +84,11 @@ HANDOFF.md                     Notes de passation, git-ignoré
 
 ## Coach IA
 
-- Gemini (offre gratuite Google AI Studio), appelé directement depuis le navigateur (`gemini`, endpoint `generateContent`). Modèles listés dynamiquement (`loadModels`), le Flash non Lite le plus récent par défaut.
-- En gratuit, Google peut utiliser les échanges pour entraîner ses modèles. Choix de l'utilisateur : `coachContext` n'envoie jamais les noms d'activités, les heures de départ ni les identifiants Strava (lieux et horaires). Ne pas ajouter ces champs.
+- Deux fournisseurs au choix (`SECRETS.prov`, `provOf`), appelés directement depuis le navigateur via `llm` :
+  - Gemini (offre gratuite Google AI Studio) : `gemini`, endpoint `generateContent`. Modèles listés dynamiquement (`loadModels`), le Flash non Lite le plus récent par défaut.
+  - Groq (console.groq.com, API compatible OpenAI) : `groq`, endpoint `/openai/v1/chat/completions`. L'historique `CHAT` reste au format Gemini et `groqMessages` le traduit à chaque appel (`functionCall` → `tool_calls`, `functionResponse` → messages `tool`). Les schémas d'outils sont convertis par `GROQ_TOOLS` (`lowerTypes`). Modèles listés par `loadGroqModels` (sans audio, modération ni « compound »), Llama 4 Scout par défaut (`GROQ_PREF`) car le contexte fait environ 13 000 tokens et les limites gratuites se comptent en tokens par minute. Sur une erreur 429, nouvelle tentative après le délai `retry-after`, deux fois au plus.
+  - Changer de fournisseur remet la conversation à zéro.
+- En gratuit, Google peut utiliser les échanges pour entraîner ses modèles. Choix de l'utilisateur, valable pour les deux fournisseurs : `coachContext` n'envoie jamais les noms d'activités, les heures de départ ni les identifiants Strava (lieux et horaires). Ne pas ajouter ces champs.
 - Contexte envoyé une fois en tête de conversation : résumé de charge, 8 semaines de charge quotidienne et d'activités, 16 semaines de volume, plan complet (ids de séances, `modele`, statut, réalisé), règles, 3 dernières analyses, et `bibliotheque` (`libContext` : zones, principes, catalogue compact des séances avec progressions, liste des exercices, résumé des programmes).
 - `COACH_SYS` : le livre est la base de la méthode (priorité : règles de l'athlète, puis le livre, puis règles générales). Chaque séance proposée doit venir du catalogue (`modele` + `variante`).
 - Outil `consulter_bibliotheque(id)` : fiche complète (séance, exercice sans images, programme jour par jour), répondu automatiquement par la page (`libLookup`, boucle `coachRun`, 5 consultations d'affilée maximum).
@@ -148,4 +151,4 @@ cd docs && python3 -m http.server 8000
 - Les seuils TSB et les indicateurs sont indicatifs (proxy RE).
 - La puissance réelle n'est pas issue de Strava pour toutes les sorties : la FTP de référence est estimée, non mesurée.
 - Sans jeton GitHub, les éditions du plan restent dans le navigateur. Avec un jeton, « Enregistrer » les commite ; GitHub Pages sert la nouvelle version après environ une minute.
-- Coach : quotas de l'offre gratuite Gemini faibles et variables (erreur 429 affichée). Changer de modèle dans les réglages si besoin.
+- Coach : quotas des offres gratuites Gemini et Groq faibles et variables (erreur 429 affichée, relancée automatiquement pour Groq). Changer de modèle ou de fournisseur dans les réglages si besoin.
