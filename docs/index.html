@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#f8f2f4" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0c0a0f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6fa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0c13" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%230c0a0f%22/%3E%3Cg transform=%22translate%288.5 6%29 scale%28.0716%29%22 fill=%22none%22 stroke=%22%23ff2a3c%22 stroke-width=%2244%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M150 410 328 62 500 410H402L328 270 258 410Z%22/%3E%3Cpath d=%22M325 410H402L455 520 500 410H588L455 673Z%22/%3E%3C/g%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Stravi</title>
@@ -130,7 +130,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible,summary:focus-visi
 .seg button:hover{color:var(--fg)}
 .seg button[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:0 1px 2px rgba(22,24,39,.08),0 2px 8px rgba(22,24,39,.06);font-weight:650}
 /* lien secondaire « › » à la manière d'apple.com */
-.more-link{display:inline-flex;align-items:center;gap:2px;color:var(--acc);font-weight:600;text-decoration:none;font-size:14px}
+.more-link{display:inline-flex;align-items:center;gap:2px;color:var(--acc);font:inherit;font-weight:600;font-size:15px;text-decoration:none;border:0;background:none;padding:0;min-height:32px;cursor:pointer}
 .more-link::after{content:"›";font-size:1.25em;line-height:1;transform:translateY(-.04em);transition:transform var(--dur-fast) var(--ease)}
 .more-link:hover{text-decoration:underline}
 .more-link:hover::after{transform:translate(2px,-.04em)}
@@ -145,22 +145,30 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible,summary:focus-visi
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ---------- porte d'entrée ---------- */
-#gate{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
-.gate-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:32px 26px;box-shadow:var(--shadow)}
+#gate{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:var(--sp-5) 16px;background:var(--bg);color:var(--fg);position:relative;overflow:hidden;isolation:isolate}
+/* halo néon du logo, suit légèrement le pointeur (parallaxe) */
+.gate-glow{position:absolute;inset:-20%;z-index:-1;pointer-events:none;
+  background:radial-gradient(40% 35% at 50% 32%,rgba(212,42,104,.42),transparent 70%),radial-gradient(35% 30% at 64% 58%,rgba(91,63,196,.32),transparent 70%),radial-gradient(30% 25% at 34% 66%,rgba(69,192,240,.16),transparent 70%);
+  transform:translate3d(calc(var(--px,0) * 18px),calc(var(--py,0) * 18px),0);transition:transform 1.2s var(--ease)}
+.gate-card{width:100%;max-width:420px;text-align:center;padding:var(--sp-6) var(--sp-5);animation:rise var(--dur) var(--ease) both}
+.gate-card .mark.lg{margin:0 auto var(--sp-5)}
+.gate-sub{margin:var(--sp-3) auto 0;color:var(--mut);font-size:17px;line-height:1.5;max-width:30ch}
+.gate-card label{display:block;text-align:left}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 .gate-logo{width:48px;height:48px;border-radius:14px;background:var(--acc-soft);color:var(--acc);display:grid;place-items:center;margin-bottom:16px}
 .gate-logo .ico{width:28px;height:28px}
 /* logo : deux formes néon sur fond noir, dans toutes les tailles */
 .mark{display:grid;place-items:center;background:#0c0a0f;border-radius:12px;flex:none}
 .mark svg{width:72%;height:72%;fill:none;stroke:#ff2a3c;stroke-width:34;stroke-linejoin:round;
   filter:drop-shadow(0 0 2px #ff2a3c) drop-shadow(0 0 6px rgba(255,30,50,.75))}
-.mark.lg{width:84px;height:84px;border-radius:22px;margin-bottom:18px;box-shadow:0 10px 30px rgba(225,29,72,.25)}
+.mark.lg{width:96px;height:96px;border-radius:26px;margin-bottom:18px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 20px 60px rgba(212,42,104,.35)}
 .mark.lg svg{stroke-width:26;filter:drop-shadow(0 0 3px #ff2a3c) drop-shadow(0 0 12px rgba(255,30,50,.8))}
-.gate-card h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
-.gate-card form{display:grid;gap:12px;margin-top:20px}
+.gate-card h1{font-size:clamp(48px,5vw + 24px,84px);line-height:1;margin:0;letter-spacing:-.045em;font-weight:700}
+.gate-card form{display:grid;gap:12px;margin-top:var(--sp-6)}
 .pass-wrap{position:relative}
-.pass-wrap input{padding-right:42px;height:44px;font-size:16px}
-.pass-wrap .btn{position:absolute;right:4px;top:4px;padding:8px;border:0;background:transparent;color:var(--mut)}
-#unlockBtn{height:44px;font-size:15px}
+.pass-wrap input{padding:0 52px 0 18px;height:52px;font-size:16px;border-radius:var(--r-pill);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+.pass-wrap .btn{position:absolute;right:4px;top:4px;width:44px;height:44px;min-height:0;padding:0;border:0;background:transparent;color:var(--mut)}
+#unlockBtn{height:52px;font-size:16px}
 .err{color:var(--bad);font-size:13px;min-height:1.2em;margin:0}
 .shake{animation:shake .35s}
 @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
@@ -216,8 +224,22 @@ h2{font-size:var(--fs-h2);line-height:1.25;margin:0 0 14px;letter-spacing:var(--
 h3{margin:0}
 
 /* ---------- aujourd'hui ---------- */
-.today{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
-.hero-date{font-size:13px;color:var(--mut);text-transform:capitalize;margin-bottom:10px}
+.today{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:var(--sp-6)}
+/* bande sombre « keynote » : séance du jour en très grand */
+.card.keynote{position:relative;overflow:hidden;isolation:isolate;border:0;border-radius:var(--r-lg);padding:clamp(24px,3vw,48px);
+  background:#0e0f18;color:var(--fg);box-shadow:0 2px 4px rgba(14,15,24,.12),0 30px 60px rgba(14,15,24,.22)}
+.card.keynote::before{content:"";position:absolute;inset:-30% -10%;z-index:-1;pointer-events:none;
+  background:radial-gradient(38% 55% at 18% 10%,rgba(212,42,104,.40),transparent 70%),radial-gradient(34% 50% at 92% 100%,rgba(91,63,196,.38),transparent 70%);
+  transform:translate3d(0,calc(var(--scroll,0) * .12px),0)}
+.hero-date{font-size:13px;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;font-weight:650;margin-bottom:var(--sp-4)}
+.keynote .hero-sess{flex-direction:column;gap:var(--sp-4);padding-bottom:var(--sp-5)}
+.keynote .hero-sess + .hero-sess{padding-top:var(--sp-5)}
+.keynote .hero-t{font-size:clamp(32px,2.4vw + 16px,56px);line-height:1.05;letter-spacing:var(--track-hero);font-weight:700}
+.keynote .hero-meta{font-size:16px;margin-top:var(--sp-3)}
+.keynote .hero-notes{font-size:16px;line-height:1.55;max-width:52ch;margin-top:var(--sp-3)}
+.hero-more{margin-top:var(--sp-4)}
+.keynote .next{padding-top:var(--sp-4)}
+.keynote .weekbox{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:var(--sp-5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .hero-sess{display:flex;gap:14px;align-items:flex-start;padding:2px 0 14px}
 .hero-sess + .hero-sess{border-top:1px solid var(--line);padding-top:14px}
 .sport-ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff}
@@ -226,14 +248,14 @@ h3{margin:0}
 .sport-ico.sm .ico{width:18px;height:18px}
 .s-bike{background:var(--bike)}.s-run{background:var(--run)}.s-other{background:var(--other)}
 .s-rest{background:var(--soft);color:var(--mut)}
-.hero-t{font-size:20px;font-weight:650;line-height:1.25;letter-spacing:-.01em}
+.hero-t{font-family:var(--font-d);font-size:20px;font-weight:650;line-height:1.25;letter-spacing:-.01em}
 .hero-meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px;color:var(--mut);font-size:14px}
 .hero-notes{margin-top:8px;color:var(--fg2);font-size:14px}
 .next{display:flex;gap:10px;align-items:center;padding-top:12px;border-top:1px solid var(--line);font-size:14px}
 .next .muted{font-size:12px}
-.weekbox{background:var(--soft);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.weekbox{background:var(--soft);border-radius:var(--r);padding:var(--sp-4);display:flex;flex-direction:column;gap:12px;min-width:0}
 .weekbox .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;font-weight:650}
-.weekbox .big{font-size:26px;font-weight:650;line-height:1.1;letter-spacing:-.02em}
+.weekbox .big{font-family:var(--font-d);font-size:clamp(28px,1vw + 20px,36px);font-weight:700;line-height:1.1;letter-spacing:var(--track-h)}
 .weekbox .big small{font-size:14px;color:var(--mut);font-weight:500;letter-spacing:0}
 .bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--acc) 18%,transparent);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--grad);transition:width .4s}
@@ -588,6 +610,7 @@ dialog.wide .dlg-f{flex:none}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important}
+  .gate-glow,.card.keynote::before{transform:none !important}
 }
 </style>
 </head>
@@ -628,11 +651,12 @@ dialog.wide .dlg-f{flex:none}
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.4v.1"/></symbol>
 </svg>
 
-<section id="gate">
+<section id="gate" class="keynote">
+  <div class="gate-glow" aria-hidden="true"></div>
   <div class="gate-card" id="gateCard">
     <div class="mark lg" aria-hidden="true"><svg><use href="#i-logo"/></svg></div>
     <h1>Stravi</h1>
-    <p class="muted" style="margin:0">Données chiffrées. Saisir la phrase de passe pour les ouvrir.</p>
+    <p class="gate-sub">Données chiffrées. Saisir la phrase de passe pour les ouvrir.</p>
     <form id="unlockForm" autocomplete="off">
       <label for="pass" class="muted" style="margin-bottom:-6px">Phrase de passe</label>
       <div class="pass-wrap">
@@ -677,7 +701,7 @@ dialog.wide .dlg-f{flex:none}
   <main class="wrap">
     <!-- Aperçu -->
     <section class="panel" id="tab-apercu" role="tabpanel" data-panel="apercu">
-      <div class="card today" id="today"></div>
+      <div class="card today keynote" id="today"></div>
 
       <div class="kpis4" id="kpiCards"></div>
 
@@ -1048,7 +1072,7 @@ function renderToday() {
           ${st.key === "rest" ? "" : `<span class="pill ${st.cls}">${st.label}</span>`}
           ${act.min ? `<span>${fmtDur(act.min)} réalisé</span>` : ""}</div>
         ${s.notes ? `<div class="hero-notes">${esc(s.notes)}</div>` : ""}
-        ${ficheLink(s) ? `<div style="margin-top:6px">${ficheLink(s)}</div>` : ""}
+        ${ficheLink(s) ? `<div class="hero-more"><button type="button" class="more-link" data-fiche="${esc(s.model)}">Voir la fiche</button></div>` : ""}
       </div></div>`;
     }).join("");
   } else {
@@ -1787,8 +1811,16 @@ window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
   const top = $(".top");
   addEventListener("scroll", () => {
     if (ticking) return; ticking = true;
-    requestAnimationFrame(() => { top.classList.toggle("compact", scrollY > 24); ticking = false; });
+    requestAnimationFrame(() => { top.classList.toggle("compact", scrollY > 24); document.documentElement.style.setProperty("--scroll", Math.min(scrollY, 800)); ticking = false; });
   }, {passive: true});
+}
+/* parallaxe légère du halo de la porte d'entrée */
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches && matchMedia("(pointer: fine)").matches) {
+  const g = $("#gate");
+  g.addEventListener("pointermove", e => {
+    g.style.setProperty("--px", (e.clientX / innerWidth - .5).toFixed(3));
+    g.style.setProperty("--py", (e.clientY / innerHeight - .5).toFixed(3));
+  });
 }
 
 /* ---------- actions : plan ---------- */
