@@ -1,0 +1,7 @@
+HANDOFF.md
+
+.DS_Store
+private/
+__pycache__/
+*.pyc
+HANDOFF.md

@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:,">
+<title>Saison 2026-2027</title>
+<style>
+:root{
+  --bg:#f6f5f1;--fg:#1d1f1c;--mut:#6b6f66;--card:#ffffff;--line:#e2e1da;
+  --acc:#2f6b4f;--ctl:#2f6b4f;--atl:#c2572a;--tsb:#3d5a80;
+  --ok:#2f7d46;--warn:#9a6a10;--bad:#b23a3a;--grid:#ebeae4;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a;--fg:#e9e8e3;--mut:#9a9d95;--card:#1d2024;--line:#2e3238;
+    --acc:#7fc3a0;--ctl:#7fc3a0;--atl:#ef9a6b;--tsb:#8fb3dd;
+    --ok:#7fc39a;--warn:#e6b65c;--bad:#e5786f;--grid:#262a30;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a;--fg:#e9e8e3;--mut:#9a9d95;--card:#1d2024;--line:#2e3238;
+  --acc:#7fc3a0;--ctl:#7fc3a0;--atl:#ef9a6b;--tsb:#8fb3dd;
+  --ok:#7fc39a;--warn:#e6b65c;--bad:#e5786f;--grid:#262a30;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:24px 48px;
+}
+main{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+h2{font-size:15px;margin:0 0 12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.muted{color:var(--mut);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.kpi .v{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{color:var(--mut);font-size:12px;margin-top:4px}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.mut{color:var(--mut)}
+.chart{width:100%;height:auto;display:block;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mut);margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+input,textarea,button{font:inherit;color:var(--fg)}
+input[type=text],input[type=number],input[type=password],textarea{
+  background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0
+}
+button{background:transparent;border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button.primary{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row-actions{display:flex;flex-wrap:wrap;gap:8px}
+.session{display:grid;grid-template-columns:110px 1fr 90px 110px 1fr auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.session:first-child{border-top:0}
+.session .d{font-size:13px;color:var(--mut)}
+.session .t{font-weight:600}
+.session.skip{opacity:.5}
+.session .notes{grid-column:2 / -1}
+@media (max-width:720px){
+  .session{grid-template-columns:1fr 1fr;}
+  .session .d{grid-column:1}
+  .session .t{grid-column:1 / -1}
+  .session .notes{grid-column:1 / -1}
+}
+details summary{cursor:pointer;color:var(--mut);margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 6px;border-top:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:500;border-top:0}
+.scroll{overflow-x:auto}
+.analysis p{margin:0 0 10px}
+.analysis h3{font-size:16px;margin:16px 0 4px}
+.analysis h3:first-child{margin-top:0}
+#gate{max-width:360px;margin:12vh auto 0;display:grid;gap:10px}
+#gate[hidden],#app[hidden]{display:none}
+.err{color:var(--bad);font-size:13px;min-height:1.2em}
+</style>
+</head>
+<body>
+<main>
+  <section id="gate" class="card">
+    <h1>Saison 2026-2027</h1>
+    <p class="muted">Phrase de passe pour déchiffrer les données.</p>
+    <form id="unlockForm" autocomplete="off">
+      <label for="pass" class="muted">Phrase de passe</label>
+      <input id="pass" type="password" autocomplete="current-password" required>
+      <div class="row-actions" style="margin-top:10px">
+        <button class="primary" type="submit">Ouvrir</button>
+      </div>
+      <p id="gateErr" class="err" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+    <section class="card head">
+      <div>
+        <h1>Saison 2026-2027</h1>
+        <div class="muted" id="updated"></div>
+      </div>
+      <div class="row-actions">
+        <button id="refresh" type="button">Rafraîchir</button>
+        <button id="theme" type="button" aria-label="Changer le thème">Thème</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Forme</h2>
+      <div class="kpis" id="kpis"></div>
+      <p class="muted" style="margin:12px 0 0">CTL, ATL, TSB sur Strava Relative Effort (proxy, pas TSS). Seuils TSB indicatifs.</p>
+    </section>
+
+    <section class="card">
+      <h2>Charge 180 jours</h2>
+      <svg id="chartForm" class="chart" role="img" aria-label="CTL, ATL et TSB sur 180 jours"></svg>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--ctl)"></i>CTL forme</span>
+        <span><i class="sw" style="background:var(--atl)"></i>ATL fatigue</span>
+        <span><i class="sw" style="background:var(--tsb)"></i>TSB fraîcheur</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Heures par semaine, 16 dernières</h2>
+      <svg id="chartWeeks" class="chart" role="img" aria-label="Heures par semaine"></svg>
+    </section>
+
+    <section class="card">
+      <div class="head">
+        <h2 style="margin:0">Plan d'entraînement</h2>
+        <div class="row-actions">
+          <button id="exportPlan" type="button">Exporter plan.json</button>
+          <button id="resetPlan" type="button">Réinitialiser</button>
+        </div>
+      </div>
+      <p class="muted" id="planMeta" style="margin:8px 0 12px"></p>
+      <div id="plan"></div>
+      <p class="muted" style="margin-top:12px">Modifs enregistrées dans ce navigateur seulement. Pour les garder : exporter, puis remplacer private/plan.json et lancer tools/encrypt_plan.py.</p>
+    </section>
+
+    <section class="card">
+      <h2>Règles</h2>
+      <ul id="rules" style="margin:0;padding-left:18px"></ul>
+    </section>
+
+    <section class="card analysis">
+      <h2>Analyses</h2>
+      <div id="analysis"></div>
+    </section>
+
+    <section class="card">
+      <h2>Qualité des données</h2>
+      <div id="quality"></div>
+    </section>
+
+    <section class="card">
+      <h2>Activités, 30 dernières</h2>
+      <div class="scroll"><table id="acts"></table></div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const SPORTS = {
+  bike: new Set(["Ride","VirtualRide","GravelRide","MountainBikeRide","EBikeRide"]),
+  run: new Set(["Run","TrailRun","VirtualRun"])
+};
+const FLAG_LABELS = {
+  short: "sortie courte (< 15 min)", no_hr: "pas de FC", no_re: "pas de charge (RE)",
+  no_power: "pas de puissance route", trainer_no_power: "home trainer sans puissance"
+};
+let DATA = null, PLAN_FILE = null, PLAN = null, PASS = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const todayISO = () => new Date().toLocaleDateString("sv-SE", {timeZone: "Europe/Paris"});
+const fmtDay = iso => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", {weekday: "short", day: "2-digit", month: "short"});
+const fmtShort = iso => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", {day: "2-digit", month: "2-digit"});
+const round1 = x => Math.round(x * 10) / 10;
+
+async function decrypt(blob, pass) {
+  const enc = new TextEncoder();
+  const km = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    {name: "PBKDF2", salt: b64(blob.salt), iterations: blob.iter, hash: "SHA-256"},
+    km, {name: "AES-GCM", length: 256}, false, ["decrypt"]);
+  const pt = await crypto.subtle.decrypt({name: "AES-GCM", iv: b64(blob.iv)}, key, b64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+async function fetchBlob(name) {
+  const r = await fetch(`${name}?t=${Date.now()}`, {cache: "no-store"});
+  if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`);
+  return r.json();
+}
+
+async function loadData() {
+  const [d, p] = await Promise.all([
+    fetchBlob("data.enc.json"),
+    fetchBlob("plan.enc.json").catch(() => null)
+  ]);
+  DATA = await decrypt(d, PASS);
+  PLAN_FILE = p ? await decrypt(p, PASS) : {weeks: [], rules: [], analysis: []};
+  if (!PLAN) PLAN = loadDraft() || structuredClone(PLAN_FILE);
+}
+
+/* ---------- plan draft (per navigateur) ---------- */
+function loadDraft() {
+  try { const s = localStorage.getItem("plan-draft"); return s ? JSON.parse(s) : null; } catch { return null; }
+}
+function saveDraft() {
+  try { localStorage.setItem("plan-draft", JSON.stringify(PLAN)); } catch {}
+}
+
+/* ---------- séances : planifié vs réalisé ---------- */
+function actualFor(s) {
+  const acts = DATA.activities.filter(a => a.date === s.date && (s.sport === "other" || SPORTS[s.sport]?.has(a.sport)));
+  const min = Math.round(acts.reduce((t, a) => t + a.h * 60, 0));
+  return {min, n: acts.length};
+}
+function statusFor(s) {
+  if (s.skip) return {label: "Annulé", cls: "mut"};
+  if (!s.duration_min) return {label: "Repos", cls: "mut"};
+  const today = todayISO();
+  const {min} = actualFor(s);
+  if (s.date > today) return {label: "À venir", cls: "mut"};
+  if (min >= 0.8 * s.duration_min) return {label: "Fait", cls: "ok"};
+  if (min > 0) return {label: "Partiel", cls: "warn"};
+  return {label: s.date === today ? "En cours" : "Manqué", cls: s.date === today ? "warn" : "bad"};
+}
+
+/* ---------- rendu ---------- */
+function renderKpis() {
+  const s = DATA.summary;
+  const tsbCls = s.tsb < -30 ? "bad" : s.tsb < -10 ? "warn" : "ok";
+  const tsbLbl = s.tsb < -30 ? "surcharge possible" : s.tsb < -10 ? "charge élevée" : s.tsb <= 5 ? "stable" : "frais";
+  const k = (v, l, cls = "") => `<div class="kpi"><div class="v ${cls}">${v}</div><div class="l">${l}</div></div>`;
+  $("#kpis").innerHTML = [
+    k(round1(s.ctl), "CTL forme"),
+    k(round1(s.atl), "ATL fatigue"),
+    k(`${s.tsb > 0 ? "+" : ""}${round1(s.tsb)} <span class="pill ${tsbCls}">${tsbLbl}</span>`, "TSB fraîcheur"),
+    k(`${round1(s.h_7d)} h`, "7 derniers jours"),
+    k(`${s.km_7d} km`, "km 7 jours"),
+    k(`${s.re_7d}`, "RE 7 jours"),
+    k(`${round1(s.h_week_28d)} h`, "moy. hebdo 28 j"),
+    k(`${s.re_week_28d}`, "RE moy. hebdo 28 j")
+  ].join("");
+}
+
+function renderCharts() {
+  const D = DATA.daily, W = 640, H = 240, P = {l: 36, r: 10, t: 10, b: 22};
+  const vals = D.flatMap(d => [d.ctl, d.atl, d.tsb, 0]);
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+  const x = i => P.l + i * (W - P.l - P.r) / (D.length - 1);
+  const y = v => P.t + (hi - v) * (H - P.t - P.b) / span;
+  const path = k => D.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(d[k]).toFixed(1)}`).join("");
+  let g = "";
+  for (let i = 0; i <= 4; i++) {
+    const v = lo + span * i / 4;
+    g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--grid)"/>`;
+    g += `<text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" style="fill:var(--mut)">${Math.round(v)}</text>`;
+  }
+  g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(0)}" y2="${y(0)}" style="stroke:var(--mut);stroke-dasharray:3 3"/>`;
+  const lastIdx = D.length - 1;
+  g += `<path d="${path("tsb")}" fill="none" stroke-width="1.6" style="stroke:var(--tsb)"/>`;
+  g += `<path d="${path("atl")}" fill="none" stroke-width="1.6" style="stroke:var(--atl)"/>`;
+  g += `<path d="${path("ctl")}" fill="none" stroke-width="2.2" style="stroke:var(--ctl)"/>`;
+  g += `<circle cx="${x(lastIdx)}" cy="${y(D[lastIdx].ctl)}" r="3.5" style="fill:var(--ctl)"/>`;
+  g += `<text x="${P.l}" y="${H - 4}" font-size="10" style="fill:var(--mut)">${fmtShort(D[0].d)}</text>`;
+  g += `<text x="${W - P.r}" y="${H - 4}" text-anchor="end" font-size="10" style="fill:var(--mut)">${fmtShort(D[lastIdx].d)}</text>`;
+  $("#chartForm").setAttribute("viewBox", `0 0 ${W} ${H}`);
+  $("#chartForm").innerHTML = g;
+
+  const weeks = DATA.weekly.slice(-16);
+  const maxH = Math.max(1, ...weeks.map(w => w.h));
+  const bw = (W - P.l - P.r) / 16;
+  let b = "";
+  for (let i = 0; i <= 3; i++) {
+    const v = maxH * i / 3, yy = P.t + (maxH - v) * (H - P.t - P.b) / maxH;
+    b += `<line x1="${P.l}" x2="${W - P.r}" y1="${yy}" y2="${yy}" style="stroke:var(--grid)"/>`;
+    b += `<text x="${P.l - 6}" y="${yy + 4}" text-anchor="end" font-size="10" style="fill:var(--mut)">${round1(v)} h</text>`;
+  }
+  weeks.forEach((w, i) => {
+    const bh = w.h * (H - P.t - P.b) / maxH, xx = P.l + i * bw + bw * 0.2;
+    b += `<rect x="${xx.toFixed(1)}" y="${(H - P.b - bh).toFixed(1)}" width="${(bw * 0.6).toFixed(1)}" height="${bh.toFixed(1)}" rx="2" style="fill:var(--acc)"><title>${fmtShort(w.week)} : ${round1(w.h)} h, ${w.km} km, RE ${w.re}</title></rect>`;
+  });
+  if (weeks.length) b += `<text x="${P.l}" y="${H - 4}" font-size="10" style="fill:var(--mut)">${fmtShort(weeks[0].week)}</text>`;
+  $("#chartWeeks").setAttribute("viewBox", `0 0 ${W} ${H}`);
+  $("#chartWeeks").innerHTML = b;
+}
+
+function sessionRow(s, wi, si) {
+  const st = statusFor(s), act = actualFor(s);
+  const actTxt = s.duration_min || act.n ? `${act.min} min${act.n ? ` (${act.n})` : ""}` : "—";
+  return `<div class="session ${s.skip ? "skip" : ""}" data-w="${wi}" data-s="${si}">
+    <div class="d">${fmtDay(s.date)}</div>
+    <div><div class="t">${esc(s.title)}</div><div class="muted">${esc(s.type)}</div></div>
+    <div><input type="number" min="0" step="5" value="${s.duration_min}" data-f="duration_min" aria-label="Durée prévue, minutes"><div class="muted">prévu, min</div></div>
+    <div><div>${actTxt}</div><span class="pill ${st.cls}">${st.label}</span></div>
+    <div class="row-actions">
+      <button type="button" data-act="skip">${s.skip ? "Réactiver" : "Annuler"}</button>
+      <button type="button" data-act="del" aria-label="Supprimer la séance">×</button>
+    </div>
+    <input class="notes" type="text" value="${esc(s.notes)}" data-f="notes" aria-label="Consigne">
+  </div>`;
+}
+
+function renderPlan() {
+  const today = todayISO();
+  const weeks = PLAN.weeks || [];
+  $("#planMeta").textContent = `${PLAN.season || ""} · mis à jour ${PLAN.updated || "?"}`;
+  if (!weeks.length) { $("#plan").innerHTML = `<p class="muted">Aucune semaine. Ajouter dans private/plan.json puis chiffrer.</p>`; return; }
+  $("#plan").innerHTML = weeks.map((w, wi) => {
+    const end = new Date(w.start + "T12:00:00"); end.setDate(end.getDate() + 6);
+    const endISO = end.toLocaleDateString("sv-SE");
+    const current = w.start <= today && today <= endISO;
+    const planH = w.sessions.reduce((t, s) => t + (s.skip ? 0 : s.duration_min), 0) / 60;
+    const doneH = DATA.weekly.find(x => x.week === w.start)?.h ?? 0;
+    const head = `<strong>${fmtShort(w.start)} → ${fmtShort(endISO)}</strong> · ${esc(w.focus)} · <span class="muted">réalisé ${round1(doneH)} h / prévu ${round1(planH)} h (cible ${w.target_h} h)</span>`;
+    const body = w.sessions.map((s, si) => sessionRow(s, wi, si)).join("")
+      + `<div class="row-actions" style="padding-top:10px"><button type="button" data-act="add" data-w="${wi}">+ séance</button></div>`;
+    return current
+      ? `<div style="margin-bottom:16px"><div style="margin-bottom:6px">${head}</div>${body}</div>`
+      : `<details style="margin-bottom:10px"><summary>${fmtShort(w.start)} → ${fmtShort(endISO)} · ${esc(w.focus)}</summary>${head}${body}</details>`;
+  }).join("");
+}
+
+function renderRules() {
+  $("#rules").innerHTML = (PLAN.rules || []).map(r => `<li>${esc(r)}</li>`).join("") || `<li class="muted">Aucune règle.</li>`;
+}
+
+function renderAnalysis() {
+  const items = [...(PLAN.analysis || [])].sort((a, b) => b.date.localeCompare(a.date));
+  $("#analysis").innerHTML = items.map(a => `<article><h3>${esc(a.title)} <span class="muted" style="font-weight:400">${fmtShort(a.date)}</span></h3>${String(a.body).split(/\n\n+/).map(p => `<p>${esc(p)}</p>`).join("")}</article>`).join("") || `<p class="muted">Aucune analyse.</p>`;
+}
+
+function renderQuality() {
+  const counts = {};
+  DATA.activities.forEach(a => a.flags.forEach(f => counts[f] = (counts[f] || 0) + 1));
+  const rows = Object.entries(counts).map(([f, n]) => `<li>${n} × ${esc(FLAG_LABELS[f] || f)}</li>`).join("");
+  $("#quality").innerHTML = (rows ? `<ul style="margin:0 0 8px;padding-left:18px">${rows}</ul>` : `<p class="muted">Aucun problème détecté.</p>`)
+    + `<p class="muted" style="margin:0">Puissance : seule source fiable = home trainer. Watts estimés Strava non utilisés.</p>`;
+}
+
+function renderActivities() {
+  const head = `<tr><th>Date</th><th>Activité</th><th>Durée</th><th>km</th><th>D+</th><th>RE</th><th>FC moy</th><th>W moy</th></tr>`;
+  const rows = DATA.activities.slice(0, 30).map(a => `<tr>
+    <td>${fmtShort(a.date)}</td>
+    <td>${esc(a.name)}<div class="muted">${esc(a.sport)}${a.trainer ? " · HT" : ""}</div></td>
+    <td>${round1(a.h)} h</td><td>${a.km}</td><td>${a.elev}</td>
+    <td>${a.re ?? "—"}</td><td>${a.hr_avg ? Math.round(a.hr_avg) : "—"}</td><td>${a.w_avg ? Math.round(a.w_avg) : "—"}</td></tr>`).join("");
+  $("#acts").innerHTML = head + rows;
+}
+
+function renderAll() {
+  $("#updated").textContent = `Données : ${DATA.generated}`;
+  renderKpis(); renderCharts(); renderPlan(); renderRules(); renderAnalysis(); renderQuality(); renderActivities();
+}
+
+/* ---------- actions ---------- */
+function findSession(wi, si) { return PLAN.weeks[wi].sessions[si]; }
+
+/* change (et non input) : évite de re-rendre le champ pendant la frappe */
+$("#plan").addEventListener("change", e => {
+  const row = e.target.closest(".session"); if (!row) return;
+  const f = e.target.dataset.f; if (!f) return;
+  const s = findSession(+row.dataset.w, +row.dataset.s);
+  s[f] = f === "duration_min" ? Math.max(0, parseInt(e.target.value, 10) || 0) : e.target.value;
+  saveDraft(); renderPlan();
+});
+
+$("#plan").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-act]"); if (!btn) return;
+  const act = btn.dataset.act;
+  if (act === "add") {
+    const week = PLAN.weeks[+btn.dataset.w];
+    week.sessions.push({id: "n" + Date.now(), date: week.start, sport: "bike", type: "Home trainer", title: "Nouvelle séance", duration_min: 60, notes: ""});
+  } else {
+    const row = btn.closest(".session"); const s = findSession(+row.dataset.w, +row.dataset.s);
+    if (act === "skip") s.skip = !s.skip;
+    if (act === "del" && confirm("Supprimer cette séance ?")) PLAN.weeks[+row.dataset.w].sessions.splice(+row.dataset.s, 1);
+  }
+  saveDraft(); renderPlan();
+});
+
+$("#exportPlan").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(PLAN, null, 2)], {type: "application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "plan.json"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+$("#resetPlan").addEventListener("click", () => {
+  if (!confirm("Revenir au plan enregistré ? Les modifs de ce navigateur seront perdues.")) return;
+  PLAN = structuredClone(PLAN_FILE); saveDraft(); renderAll();
+});
+
+$("#refresh").addEventListener("click", async () => {
+  try { await loadData(); renderAll(); } catch (err) { alert("Rafraîchissement impossible : " + err.message); }
+});
+
+let themeIdx = 0;
+$("#theme").addEventListener("click", () => {
+  const modes = [null, "light", "dark"];
+  themeIdx = (themeIdx + 1) % modes.length;
+  if (modes[themeIdx]) document.documentElement.dataset.theme = modes[themeIdx];
+  else delete document.documentElement.dataset.theme;
+});
+
+$("#unlockForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("#gateErr").textContent = "";
+  PASS = $("#pass").value;
+  try {
+    await loadData();
+    $("#gate").hidden = true; $("#app").hidden = false;
+    renderAll();
+    setInterval(async () => { try { await loadData(); renderAll(); } catch {} }, 15 * 60 * 1000);
+  } catch (err) {
+    PASS = null;
+    $("#gateErr").textContent = err instanceof DOMException || /decrypt|operation/i.test(err.message || "")
+      ? "Phrase incorrecte." : "Erreur : " + err.message;
+  }
+});
+</script>
+</body>
+</html>
