@@ -902,7 +902,7 @@ dialog.wide .dlg-f{flex:none}
       <div class="prov" data-prov="groq" hidden>
         <label class="field">Clé API Groq<input type="password" id="groqKey" autocomplete="off" spellcheck="false" placeholder="gsk_…"></label>
         <label class="field">Modèle<select id="groqModel"><option value="">Saisir la clé pour charger les modèles</option></select></label>
-        <p class="hint">Clé gratuite sur <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com</a>. Les limites gratuites se comptent en tokens par minute et le contexte du coach est volumineux : Llama 4 Scout est choisi par défaut pour cette raison.</p>
+        <p class="hint">Clé gratuite sur <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com</a>. Les limites gratuites se comptent en tokens par minute : le coach envoie à Groq un contexte abrégé. Choisis un modèle qui gère les outils (GPT-OSS 120B, Llama 4 Scout, Llama 3.3 70B…), la vérification le confirme.</p>
       </div>
       <p class="hint">Quel que soit le fournisseur, le coach ne reçoit ni noms d'activités, ni heures de départ, ni identifiants Strava.</p>
     </fieldset>
@@ -2484,7 +2484,9 @@ async function groq(contents, retry = 0) {
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {"Content-Type": "application/json", Authorization: `Bearer ${SECRETS.groq}`},
-    body: JSON.stringify({model: SECRETS.groqModel, messages: groqMessages(contents), tools: GROQ_TOOLS, temperature: 0.4})
+    /* réponse plafonnée et raisonnement court : la réserve de sortie compte dans la limite par minute */
+    body: JSON.stringify({model: SECRETS.groqModel, messages: groqMessages(contents), tools: GROQ_TOOLS, temperature: 0.4,
+      max_completion_tokens: 3000, ...(/gpt-oss/.test(SECRETS.groqModel) ? {reasoning_effort: "low"} : {})})
   });
   if (!r.ok) {
     let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
