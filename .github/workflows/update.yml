@@ -37,5 +37,7 @@ jobs:
             echo "Pas de changement."
           else
             git commit -m "chore: update encrypted data"
+            # le plan peut avoir été commité depuis la page pendant l'exécution
+            git pull --rebase
             git push
           fi
