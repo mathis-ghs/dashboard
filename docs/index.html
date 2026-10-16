@@ -893,6 +893,7 @@ dialog.wide .dlg-f{flex:none}
       <label class="field">Fournisseur<select id="coachProv">
         <option value="gemini">Gemini (Google AI Studio)</option>
         <option value="groq">Groq (GroqCloud)</option>
+        <option value="openai">ChatGPT (API OpenAI)</option>
       </select></label>
       <div class="prov" data-prov="gemini">
         <label class="field">Clé API Gemini<input type="password" id="gemKey" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
@@ -903,6 +904,11 @@ dialog.wide .dlg-f{flex:none}
         <label class="field">Clé API Groq<input type="password" id="groqKey" autocomplete="off" spellcheck="false" placeholder="gsk_…"></label>
         <label class="field">Modèle<select id="groqModel"><option value="">Saisir la clé pour charger les modèles</option></select></label>
         <p class="hint">Clé gratuite sur <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com</a>. Les limites gratuites se comptent en tokens par minute : le coach envoie à Groq un contexte abrégé. Choisis un modèle qui gère les outils (GPT-OSS 120B, Llama 4 Scout, Llama 3.3 70B…), la vérification le confirme.</p>
+      </div>
+      <div class="prov" data-prov="openai" hidden>
+        <label class="field">Clé API OpenAI<input type="password" id="openaiKey" autocomplete="off" spellcheck="false" placeholder="sk-…"></label>
+        <label class="field">Modèle<select id="openaiModel"><option value="">Saisir la clé pour charger les modèles</option></select></label>
+        <p class="hint">Clé sur <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com</a>. L'API est payante à l'usage, avec du crédit prépayé (l'abonnement ChatGPT Plus ne l'inclut pas) : avec un modèle « mini », une question coûte de l'ordre du centime selon les tarifs en vigueur. Par défaut, OpenAI n'utilise pas les données de l'API pour entraîner ses modèles.</p>
       </div>
       <p class="hint">Quel que soit le fournisseur, le coach ne reçoit ni noms d'activités, ni heures de départ, ni identifiants Strava.</p>
     </fieldset>
@@ -997,7 +1003,7 @@ async function fetchBlob(name) {
   return r.json();
 }
 
-/* ---------- clés (GitHub, Gemini, Groq) : chiffrées avec la phrase, dans ce navigateur ---------- */
+/* ---------- clés (GitHub, Gemini, Groq, OpenAI) : chiffrées avec la phrase, dans ce navigateur ---------- */
 let SECRETS = {};
 async function loadSecrets() {
   try { const s = localStorage.getItem("secrets"); SECRETS = s ? await decrypt(JSON.parse(s), PASS) : {}; } catch { SECRETS = {}; }
@@ -2082,11 +2088,11 @@ function openSettings(reason) {
   $("#ghToken").value = SECRETS.gh || "";
   $("#ghRepo").value = repoOf();
   $("#gemKey").value = SECRETS.gemini || "";
-  $("#groqKey").value = SECRETS.groq || "";
+  for (const p of Object.keys(OAI)) $(`#${p}Key`).value = SECRETS[OAI[p].key] || "";
   $("#coachProv").value = provOf(); showProv(provOf());
   $("#settingsStatus").textContent = "";
   if (SECRETS.gemini) loadModels(SECRETS.gemini, SECRETS.model).catch(() => {});
-  if (SECRETS.groq) loadGroqModels(SECRETS.groq, SECRETS.groqModel).catch(() => {});
+  for (const [p, P] of Object.entries(OAI)) if (SECRETS[P.key]) loadOaiModels(p, SECRETS[P.key], SECRETS[P.model]).catch(() => {});
   $("#settingsDlg").showModal();
 }
 $("#settings").addEventListener("click", () => openSettings());
@@ -2110,42 +2116,61 @@ async function loadModels(key, selected) {
 }
 $("#gemKey").addEventListener("change", e => { const k = e.target.value.trim(); if (k) loadModels(k, SECRETS.model).catch(err => $("#settingsStatus").textContent = err.message); });
 
-/* Groq : API compatible OpenAI ; les modèles audio, de modération et « compound » (sans outils personnalisés) sont écartés */
-const provOf = () => SECRETS.prov === "groq" ? "groq" : "gemini";
+/* fournisseurs au format OpenAI (Groq, OpenAI) : même API, filtres de modèles et réglages propres */
+const verOf = id => parseFloat((id.match(/^gpt-(\d+(?:\.\d+)?)/) || [])[1] || 0);
+const OAI = {
+  groq: {nom: "Groq", base: "https://api.groq.com/openai/v1", key: "groq", model: "groqModel",
+    /* audio, modération et « compound » (sans outils personnalisés) écartés */
+    keep: id => !/whisper|tts|playai|orpheus|guard|compound|distil/i.test(id),
+    pick: ms => ["meta-llama/llama-4-scout-17b-16e-instruct", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "moonshotai/kimi-k2-instruct-0905",
+      "moonshotai/kimi-k2-instruct", "openai/gpt-oss-20b"].find(m => ms.includes(m)),
+    /* limites gratuites en tokens par minute : contexte abrégé, réponse plafonnée, raisonnement court */
+    compact: true,
+    extra: m => ({temperature: 0.4, max_completion_tokens: 3000, ...(/gpt-oss/.test(m) ? {reasoning_effort: "low"} : {})})},
+  openai: {nom: "OpenAI", base: "https://api.openai.com/v1", key: "openai", model: "openaiModel",
+    /* modèles de conversation seulement, sans les versions datées */
+    keep: id => /^(gpt-|o\d)/.test(id) && !/audio|realtime|tts|transcribe|search|image|instruct|codex|embedding|moderation|\d{4}-\d{2}-\d{2}$/.test(id),
+    /* défaut : le « mini » le plus récent (bon rapport coût / qualité) */
+    pick: ms => ms.filter(m => /^gpt-[\d.]+-mini$/.test(m)).sort((a, b) => verOf(b) - verOf(a))[0] || ms.find(m => /mini/.test(m)),
+    compact: false,
+    /* pas de température : les modèles de raisonnement n'acceptent que la valeur par défaut */
+    extra: () => ({})}
+};
+const provOf = () => SECRETS.prov in OAI ? SECRETS.prov : "gemini";
 const showProv = p => $$(".prov").forEach(d => d.hidden = d.dataset.prov !== p);
 $("#coachProv").addEventListener("change", e => showProv(e.target.value));
-const GROQ_PREF = ["meta-llama/llama-4-scout-17b-16e-instruct", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "moonshotai/kimi-k2-instruct-0905", "moonshotai/kimi-k2-instruct", "openai/gpt-oss-20b"];
-const NO_TOOLS = m => /tool calling.*not supported|does not support tool/i.test(m);
-/* mini-appel avec un outil factice : certains modèles Groq refusent les outils, indispensables au coach */
-async function checkGroqTools(key, model) {
-  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+const NO_TOOLS = m => /tool calling.*not supported|does not support tool|tools? (are|is) not supported/i.test(m);
+/* mini-appel avec un outil factice : certains modèles refusent les outils, indispensables au coach */
+async function checkTools(p, key, model) {
+  const r = await fetch(`${OAI[p].base}/chat/completions`, {
     method: "POST", headers: {"Content-Type": "application/json", Authorization: `Bearer ${key}`},
-    body: JSON.stringify({model, max_tokens: 1, messages: [{role: "user", content: "ok"}],
+    body: JSON.stringify({model, max_completion_tokens: 16, messages: [{role: "user", content: "ok"}],
       tools: [{type: "function", function: {name: "test", description: "test", parameters: {type: "object", properties: {}}}}]})
   });
   if (r.ok || r.status === 429) return;
   let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
-  if (r.status === 401) throw new Error("clé Groq refusée");
+  if (r.status === 401) throw new Error(`clé ${OAI[p].nom} refusée`);
   if (NO_TOOLS(m)) throw new Error(`${model} ne gère pas les outils du coach, choisis un autre modèle`);
 }
-async function loadGroqModels(key, selected) {
-  const sel = $("#groqModel");
+async function loadOaiModels(p, key, selected) {
+  const P = OAI[p], sel = $(`#${p}Model`);
   sel.innerHTML = `<option value="">Chargement des modèles…</option>`;
-  const r = await fetch("https://api.groq.com/openai/v1/models", {headers: {Authorization: `Bearer ${key}`}});
-  if (!r.ok) { sel.innerHTML = `<option value="">Clé non valide</option>`; throw new Error(r.status === 401 ? "clé Groq refusée" : `Groq ${r.status}`); }
-  const models = ((await r.json()).data || [])
-    .filter(m => m.active !== false && !/whisper|tts|playai|orpheus|guard|compound|distil/i.test(m.id))
-    .map(m => m.id).sort();
-  if (!models.length) { sel.innerHTML = `<option value="">Aucun modèle disponible</option>`; throw new Error("aucun modèle Groq disponible pour cette clé"); }
-  const def = selected && models.includes(selected) ? selected : GROQ_PREF.find(m => models.includes(m)) || models[0];
+  const r = await fetch(`${P.base}/models`, {headers: {Authorization: `Bearer ${key}`}});
+  if (!r.ok) { sel.innerHTML = `<option value="">Clé non valide</option>`; throw new Error(r.status === 401 ? `clé ${P.nom} refusée` : `${P.nom} ${r.status}`); }
+  const models = ((await r.json()).data || []).filter(m => m.active !== false && P.keep(m.id)).map(m => m.id).sort();
+  if (!models.length) { sel.innerHTML = `<option value="">Aucun modèle disponible</option>`; throw new Error(`aucun modèle ${P.nom} disponible pour cette clé`); }
+  const def = selected && models.includes(selected) ? selected : P.pick(models) || models[0];
   sel.innerHTML = models.map(m => `<option value="${esc(m)}" ${m === def ? "selected" : ""}>${esc(m)}</option>`).join("");
 }
-$("#groqKey").addEventListener("change", e => { const k = e.target.value.trim(); if (k) loadGroqModels(k, SECRETS.groqModel).catch(err => $("#settingsStatus").textContent = err.message); });
+for (const [p, P] of Object.entries(OAI)) $(`#${p}Key`).addEventListener("change", e => {
+  const k = e.target.value.trim(); if (k) loadOaiModels(p, k, SECRETS[P.model]).catch(err => $("#settingsStatus").textContent = err.message);
+});
 
 $("#saveSettings").addEventListener("click", async () => {
   const st = $("#settingsStatus"), btn = $("#saveSettings");
   const next = {gh: $("#ghToken").value.trim(), repo: $("#ghRepo").value.trim(), gemini: $("#gemKey").value.trim(), model: $("#gemModel").value,
-    groq: $("#groqKey").value.trim(), groqModel: $("#groqModel").value, prov: $("#coachProv").value};
+    groq: $("#groqKey").value.trim(), groqModel: $("#groqModel").value, openai: $("#openaiKey").value.trim(), openaiModel: $("#openaiModel").value,
+    prov: $("#coachProv").value};
   btn.disabled = true; st.className = "status"; st.textContent = "Vérification…";
   try {
     if (next.gh) {
@@ -2159,13 +2184,14 @@ $("#saveSettings").addEventListener("click", async () => {
       next.model = $("#gemModel").value;
       if (!next.model) throw new Error("choisir un modèle Gemini");
     }
-    if (next.groq) {
-      if (!next.groqModel) await loadGroqModels(next.groq);
-      next.groqModel = $("#groqModel").value;
-      if (!next.groqModel) throw new Error("choisir un modèle Groq");
-      if (next.prov === "groq") await checkGroqTools(next.groq, next.groqModel);
+    for (const [p, P] of Object.entries(OAI)) {
+      if (!next[P.key]) continue;
+      if (!next[P.model]) await loadOaiModels(p, next[P.key]);
+      next[P.model] = $(`#${p}Model`).value;
+      if (!next[P.model]) throw new Error(`choisir un modèle ${P.nom}`);
+      if (next.prov === p) await checkTools(p, next[P.key], next[P.model]);
     }
-    if (next.prov === "groq" && !next.groq) throw new Error("ajouter une clé Groq ou choisir Gemini");
+    if (next.prov in OAI && !next[OAI[next.prov].key]) throw new Error(`ajouter une clé ${OAI[next.prov].nom} ou choisir un autre fournisseur`);
     /* l'historique d'une conversation n'est pas transposable d'un fournisseur à l'autre */
     if (next.prov !== provOf()) resetCoach();
     SECRETS = next; await storeSecrets();
@@ -2177,12 +2203,12 @@ $("#saveSettings").addEventListener("click", async () => {
   } finally { btn.disabled = false; }
 });
 $("#clearSecrets").addEventListener("click", async () => {
-  if (!confirm("Effacer le jeton GitHub et les clés du coach (Gemini, Groq) de ce navigateur ?")) return;
+  if (!confirm("Effacer le jeton GitHub et les clés du coach (Gemini, Groq, OpenAI) de ce navigateur ?")) return;
   SECRETS = {}; await storeSecrets(); resetCoach();
   $("#settingsDlg").close(); renderDraftState(); renderCoach(); toast("Clés effacées");
 });
 
-/* ---------- coach (Gemini ou Groq, appelé depuis le navigateur) ---------- */
+/* ---------- coach (Gemini, Groq ou OpenAI, appelé depuis le navigateur) ---------- */
 const COACH_SYS = `Tu es le coach d'entraînement personnel d'un cycliste amateur (route, home trainer, un peu de course à pied et de renforcement). Tu réponds en français, en tutoyant, de façon concise et concrète.
 
 Données : le premier message contient un JSON avec la date du jour, le résumé de charge, la charge quotidienne (CTL = moyenne 42 j, ATL = moyenne 7 j, TSB = CTL - ATL), le volume par semaine, les activités des 8 dernières semaines et le plan (semaines identifiées par leur lundi, séances avec id, statut et minutes réalisées, règles de l'athlète, analyses). La charge vient du Strava Relative Effort : c'est un proxy, pas un TSS, ne compare pas aux valeurs PMC habituelles.
@@ -2425,11 +2451,11 @@ function addMsg(kind, html) {
 }
 
 function renderCoach() {
-  const groqOn = provOf() === "groq";
-  const ready = groqOn ? SECRETS.groq && SECRETS.groqModel : SECRETS.gemini && SECRETS.model;
+  const P = OAI[provOf()];
+  const ready = P ? SECRETS[P.key] && SECRETS[P.model] : SECRETS.gemini && SECRETS.model;
   $("#composer").hidden = !ready;
   $("#coachReset").hidden = !ready || !CHAT.length;
-  $("#coachModel").textContent = !ready ? "" : groqOn ? `Groq · ${SECRETS.groqModel}` : `Gemini · ${SECRETS.model.replace(/^models\//, "")}`;
+  $("#coachModel").textContent = !ready ? "" : P ? `${P.nom} · ${SECRETS[P.model]}` : `Gemini · ${SECRETS.model.replace(/^models\//, "")}`;
   $("#coachInput").disabled = !!PENDING || COACH_BUSY;
   $("#coachInput").placeholder = PENDING ? "Accepte ou refuse la proposition d'abord" : "Demande au coach…";
   $("#coachSend").disabled = !!PENDING || COACH_BUSY;
@@ -2440,7 +2466,7 @@ function renderCoach() {
       <div><b style="color:var(--fg)">Ton coach</b><br>Il analyse ta charge, ton volume et le plan, et ajuste les séances en s'appuyant sur la bibliothèque du livre. Chaque modification t'est proposée avant d'être appliquée.</div>
       ${ready ? "" : `<button class="btn primary" type="button" id="coachSetup">${icon("gear")}Configurer le coach</button>`}
     </div>`;
-    $("#coachSetup")?.addEventListener("click", () => openSettings("Ajoute une clé Gemini ou Groq pour utiliser le coach."));
+    $("#coachSetup")?.addEventListener("click", () => openSettings("Ajoute une clé Gemini, Groq ou OpenAI pour utiliser le coach."));
   }
 }
 
@@ -2461,11 +2487,11 @@ async function gemini(contents) {
   return c.content;
 }
 
-/* Groq : l'historique reste au format Gemini (CHAT) et il est traduit à chaque appel */
+/* Groq et OpenAI : l'historique reste au format Gemini (CHAT) et il est traduit à chaque appel */
 const lowerTypes = o => Array.isArray(o) ? o.map(lowerTypes) : o && typeof o === "object"
   ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, k === "type" && typeof v === "string" ? v.toLowerCase() : lowerTypes(v)])) : o;
-const GROQ_TOOLS = COACH_TOOLS[0].functionDeclarations.map(f => ({type: "function", function: lowerTypes(f)}));
-function groqMessages(contents) {
+const OAI_TOOLS = COACH_TOOLS[0].functionDeclarations.map(f => ({type: "function", function: lowerTypes(f)}));
+function oaiMessages(contents) {
   const out = [{role: "system", content: COACH_SYS}];
   for (const c of contents) {
     const text = c.parts.filter(p => p.text && !p.thought).map(p => p.text).join("\n\n");
@@ -2480,28 +2506,28 @@ function groqMessages(contents) {
   }
   return out;
 }
-async function groq(contents, retry = 0) {
-  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+async function oai(contents, retry = 0) {
+  const P = OAI[provOf()], model = SECRETS[P.model];
+  const r = await fetch(`${P.base}/chat/completions`, {
     method: "POST",
-    headers: {"Content-Type": "application/json", Authorization: `Bearer ${SECRETS.groq}`},
-    /* réponse plafonnée et raisonnement court : la réserve de sortie compte dans la limite par minute */
-    body: JSON.stringify({model: SECRETS.groqModel, messages: groqMessages(contents), tools: GROQ_TOOLS, temperature: 0.4,
-      max_completion_tokens: 3000, ...(/gpt-oss/.test(SECRETS.groqModel) ? {reasoning_effort: "low"} : {})})
+    headers: {"Content-Type": "application/json", Authorization: `Bearer ${SECRETS[P.key]}`},
+    body: JSON.stringify({model, messages: oaiMessages(contents), tools: OAI_TOOLS, ...P.extra(model)})
   });
   if (!r.ok) {
-    let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
-    if (r.status === 401) throw new Error("Clé Groq refusée. Vérifie-la dans les réglages.");
-    if (NO_TOOLS(m)) throw new Error(`Le modèle ${SECRETS.groqModel} ne gère pas les outils du coach (fiches de la bibliothèque, propositions de plan). Choisis-en un autre dans les réglages, par exemple Llama 4 Scout ou GPT-OSS 120B.`);
-    if (r.status === 413 || /request too large/i.test(m)) throw new Error(`Demande trop volumineuse pour la limite gratuite de ${SECRETS.groqModel}. Essaie un autre modèle dans les réglages (le détail de Groq : ${m || r.status}).`);
-    /* limite par minute : attendre le délai indiqué par Groq, deux fois au plus */
+    let m = "", code = ""; try { const e = (await r.json()).error || {}; m = e.message || ""; code = e.code || ""; } catch {}
+    if (r.status === 401) throw new Error(`Clé ${P.nom} refusée. Vérifie-la dans les réglages.`);
+    if (code === "insufficient_quota" || /exceeded your current quota/i.test(m)) throw new Error("Crédit OpenAI insuffisant : ajoute du crédit sur platform.openai.com (Billing), puis réessaie.");
+    if (NO_TOOLS(m)) throw new Error(`Le modèle ${model} ne gère pas les outils du coach (fiches de la bibliothèque, propositions de plan). Choisis-en un autre dans les réglages.`);
+    if (r.status === 413 || /request too large/i.test(m)) throw new Error(`Demande trop volumineuse pour la limite de ${model}. Essaie un autre modèle dans les réglages (le détail de Groq : ${m || r.status}).`);
+    /* limite par minute : attendre le délai indiqué, deux fois au plus */
     const wait = Math.ceil(parseFloat(r.headers.get("retry-after")) || 0);
     if (r.status === 429 && retry < 2 && wait > 0 && wait <= 60) {
-      const note = addMsg("tool", `${icon("refresh")}Limite Groq atteinte, nouvelle tentative dans ${wait} s`);
+      const note = addMsg("tool", `${icon("refresh")}Limite ${P.nom} atteinte, nouvelle tentative dans ${wait} s`);
       await new Promise(res => setTimeout(res, wait * 1000)); note.remove();
-      return groq(contents, retry + 1);
+      return oai(contents, retry + 1);
     }
-    if (r.status === 429) throw new Error("Limite gratuite Groq atteinte. Réessaie dans une minute ou choisis un autre modèle dans les réglages.");
-    throw new Error(`Groq ${r.status}${m ? " : " + m : ""}`);
+    if (r.status === 429) throw new Error(`Limite ${P.nom} atteinte. Réessaie dans une minute ou choisis un autre modèle dans les réglages.`);
+    throw new Error(`${P.nom} ${r.status}${m ? " : " + m : ""}`);
   }
   const msg = (await r.json()).choices?.[0]?.message;
   if (!msg) throw new Error("Pas de réponse du modèle.");
@@ -2514,7 +2540,7 @@ async function groq(contents, retry = 0) {
   if (!parts.length) throw new Error("Réponse vide du modèle.");
   return {role: "model", parts};
 }
-const llm = contents => provOf() === "groq" ? groq(contents) : gemini(contents);
+const llm = contents => provOf() in OAI ? oai(contents) : gemini(contents);
 
 const respond = (c, response) => ({functionResponse: {...(c.id ? {id: c.id} : {}), name: c.name, response}});
 async function coachRun(depth = 0) {
@@ -2550,7 +2576,7 @@ async function coachSend(text) {
   text = text.trim();
   if (!text || COACH_BUSY || PENDING) return;
   if (!CHAT.length) $("#chat").innerHTML = "";
-  const parts = CHAT.length ? [] : [{text: "Données d'entraînement, plan actuel et bibliothèque (JSON) :\n" + coachContext(provOf() === "groq")}];
+  const parts = CHAT.length ? [] : [{text: "Données d'entraînement, plan actuel et bibliothèque (JSON) :\n" + coachContext(!!OAI[provOf()]?.compact)}];
   parts.push({text});
   const n0 = CHAT.length;
   CHAT.push({role: "user", parts});
