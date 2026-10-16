@@ -18,6 +18,7 @@ try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark"
   --acc:#2f6b4f;--acc-ink:#ffffff;--acc-soft:#e3efe8;
   --ctl:#3a6fc4;--atl:#d0532e;--tsb:#8a63c9;
   --bike:#2f6fd0;--run:#c47f12;--other:#8a63c9;
+  --z1:#a3aea7;--z2:#4f9a72;--z3:#c99a22;--z4:#d7782a;--z5:#c8443a;--z6:#7d4fb5;
   --ok:#2f7d46;--warn:#9a6a10;--bad:#b23a3a;--grid:#ebeae4;
   --ok-soft:#e5f2e8;--warn-soft:#f7eedb;--bad-soft:#f8e4e2;
   --shadow:0 1px 2px rgba(20,22,18,.04),0 2px 8px rgba(20,22,18,.04);
@@ -30,6 +31,7 @@ try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark"
     --acc:#7fc3a0;--acc-ink:#0f1512;--acc-soft:#1f3329;
     --ctl:#6390dc;--atl:#d8714a;--tsb:#9c80d6;
     --bike:#5b8fe0;--run:#c08528;--other:#9c80d6;
+    --z1:#66716b;--z2:#5fae85;--z3:#d6ad48;--z4:#e08a45;--z5:#e2675b;--z6:#a07ad6;
     --ok:#7fc39a;--warn:#e6b65c;--bad:#e5786f;--grid:#262a30;
     --ok-soft:#1d2f24;--warn-soft:#352b17;--bad-soft:#3a201f;
     --shadow:none;
@@ -41,6 +43,7 @@ try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark"
   --acc:#7fc3a0;--acc-ink:#0f1512;--acc-soft:#1f3329;
   --ctl:#6390dc;--atl:#d8714a;--tsb:#9c80d6;
   --bike:#5b8fe0;--run:#c08528;--other:#9c80d6;
+  --z1:#66716b;--z2:#5fae85;--z3:#d6ad48;--z4:#e08a45;--z5:#e2675b;--z6:#a07ad6;
   --ok:#7fc39a;--warn:#e6b65c;--bad:#e5786f;--grid:#262a30;
   --ok-soft:#1d2f24;--warn-soft:#352b17;--bad-soft:#3a201f;
   --shadow:none;
@@ -318,6 +321,7 @@ dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);co
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .dlg-h{display:flex;justify-content:space-between;align-items:center;padding:14px 14px 14px 18px;border-bottom:1px solid var(--line)}
 .dlg-b{padding:16px 18px;display:grid;gap:18px;max-height:68vh;overflow:auto}
+.dlg-f:empty{display:none}
 .dlg-f{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
 fieldset{border:0;margin:0;padding:0;display:grid;gap:10px;min-width:0}
 legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
@@ -365,8 +369,77 @@ legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--fg2)}
 .chip:hover{background:var(--soft)}
+.chip.btn-on{border-color:var(--acc);background:var(--acc-soft);color:var(--fg)}
 .coach-empty{text-align:center;color:var(--mut);padding:28px 12px;display:grid;justify-items:center;gap:10px;max-width:440px;margin:0 auto}
 .coach-empty .gate-logo{margin:0}
+
+/* ---------- bibliothèque ---------- */
+.lib-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.lib-bar .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.lib-bar .seg button{white-space:nowrap}
+.lib-bar select{width:auto;height:34px;padding-block:0}
+.lib-bar input[type=search]{max-width:240px;flex:1;min-width:150px;height:34px;padding-block:0}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.lib-card{display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;font:inherit;color:inherit;transition:border-color .15s}
+.lib-card:hover{border-color:var(--acc)}
+.lib-card .t{font-weight:650;line-height:1.3}
+.lib-card .o{font-size:13px;color:var(--fg2)}
+.lib-meta{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pill.zp{background:color-mix(in srgb,var(--zc) 20%,transparent);color:var(--fg)}
+.prof{display:flex;align-items:flex-end;gap:1px;height:30px;border-bottom:1px solid var(--line)}
+.prof i{flex:1 1 0;min-width:1px;border-radius:2px 2px 0 0}
+.prof.big{height:64px;margin:4px 0 2px}
+.lib-sec{display:grid;gap:12px}
+.lib-sec h2{margin:8px 4px 0}
+.ztable{display:grid;gap:0}
+.zrow{display:grid;grid-template-columns:44px 150px 80px minmax(0,1fr);gap:10px;align-items:baseline;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.zrow:first-child{border-top:0}
+.zrow .zc{font-weight:700;font-size:12px;border-radius:6px;text-align:center;padding:2px 0;background:color-mix(in srgb,var(--zc) 22%,transparent)}
+.zrow .ef{color:var(--mut);font-size:13px}
+.princ{display:grid;gap:12px}
+.princ div{display:grid;gap:2px}
+.princ p{margin:0;color:var(--fg2);font-size:14px}
+.src{font-size:12px;color:var(--mut);margin:0}
+.linkbtn{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0;color:var(--acc);cursor:pointer;font:inherit;font-size:13px;font-weight:600;text-align:left}
+.linkbtn .ico{width:14px;height:14px}
+.linkbtn:hover{text-decoration:underline}
+dialog.wide{width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
+dialog.wide[open]{display:flex;flex-direction:column}
+dialog.wide .dlg-b{max-height:none;flex:1 1 auto;min-height:0;gap:14px}
+dialog.wide .dlg-f{flex:none}
+.dlg-h h3{font-size:18px;line-height:1.25}
+.dlg-h .back{margin-right:4px}
+#libDlg .lead{margin:0;color:var(--fg2)}
+#libDlg h4{margin:4px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut)}
+.steps{margin:0;padding-left:22px;display:grid;gap:6px}
+.steps li{padding-left:2px}
+.steps .d{color:var(--mut);font-size:13px}
+.note{border-radius:10px;padding:10px 12px;font-size:13px;background:var(--soft);color:var(--fg2)}
+.note.warn{background:var(--warn-soft)}
+.kv{display:grid;grid-template-columns:110px minmax(0,1fr);gap:6px 12px;margin:0;font-size:14px}
+.kv dt{color:var(--mut)}.kv dd{margin:0}
+.gal{display:grid;gap:10px}
+.gal figure{margin:0;background:#fff;border-radius:10px;overflow:hidden;min-height:120px;display:grid;place-items:center}
+.gal img{display:block;width:100%;height:auto}
+.gal .muted{padding:20px}
+.vbars{display:flex;align-items:flex-end;gap:4px;height:90px}
+.vbars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;font-size:10px;color:var(--mut);min-width:0}
+.vbars i{width:100%;border-radius:4px 4px 0 0;background:var(--acc);display:block}
+.vbars i.rec{background:color-mix(in srgb,var(--acc) 40%,transparent)}
+.pweek{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.pweek + .pweek{margin-top:8px}
+.pweek summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:14px}
+.pweek summary::-webkit-details-marker{display:none}
+.pweek[open] .chev{transform:rotate(180deg)}
+.pday{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:8px;padding:7px 12px;border-top:1px solid var(--line);font-size:13px;align-items:baseline}
+.pday .d{color:var(--mut);text-transform:capitalize}
+.pday.rest{color:var(--mut)}
+.lib-add{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;width:100%}
+.lib-add .field{flex:1;min-width:120px}
+.lib-add .field.var{flex:2;min-width:180px}
+.lib-add .btn{height:38px}
+.msg.tool{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);padding:0 4px;background:none}
+.msg.tool .ico{width:14px;height:14px}
 
 /* ---------- toast ---------- */
 #toast{
@@ -420,6 +493,16 @@ legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
   .act .go{display:none}
   .act{grid-template-columns:34px minmax(0,1fr)}
   .tool-label{display:none}
+  .lib-bar input[type=search]{max-width:none}
+  .zrow{grid-template-columns:40px minmax(0,1fr) 70px}
+  .zrow .ef{grid-column:2 / -1}
+  .kv{grid-template-columns:minmax(0,1fr)}
+  .kv dd{margin-bottom:6px}
+  .lib-add{gap:8px}
+  .lib-add .field{min-width:110px}
+  .lib-add .field.var{order:-1;flex-basis:100%}
+  .lib-add .btn{width:100%}
+  dialog.wide .dlg-f{padding:10px 14px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important}
@@ -457,6 +540,8 @@ legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4.5 12 20 4.5 14 20l-3-7z"/><path d="m11 13 9-8.5"/></symbol>
   <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11a3.8 3.8 0 0 1-1 7.5"/><path d="M12 12.5v8M9 15.5l3-3 3 3"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M8 7.5h8"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.4v.1"/></symbol>
 </svg>
 
@@ -499,6 +584,7 @@ legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
         <button class="tab" role="tab" data-tab="apercu" aria-controls="tab-apercu"><svg class="ico"><use href="#i-home"/></svg>Aperçu</button>
         <button class="tab" role="tab" data-tab="plan" aria-controls="tab-plan"><svg class="ico"><use href="#i-cal"/></svg>Plan<i class="badge" id="draftBadge" hidden></i></button>
         <button class="tab" role="tab" data-tab="coach" aria-controls="tab-coach"><svg class="ico"><use href="#i-spark"/></svg>Coach</button>
+        <button class="tab" role="tab" data-tab="bibliotheque" aria-controls="tab-bibliotheque"><svg class="ico"><use href="#i-book"/></svg>Biblio</button>
         <button class="tab" role="tab" data-tab="activites" aria-controls="tab-activites"><svg class="ico"><use href="#i-list"/></svg>Activités</button>
         <button class="tab" role="tab" data-tab="notes" aria-controls="tab-notes"><svg class="ico"><use href="#i-notes"/></svg>Notes</button>
       </nav>
@@ -590,6 +676,31 @@ legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
       </div>
     </section>
 
+    <!-- Bibliothèque -->
+    <section class="panel" id="tab-bibliotheque" role="tabpanel" data-panel="bibliotheque" hidden>
+      <div class="lib-bar">
+        <div class="seg" id="libSeg" role="group" aria-label="Catégorie">
+          <button type="button" data-cat="velo">Vélo</button>
+          <button type="button" data-cat="renfo">Renfo</button>
+          <button type="button" data-cat="etirement">Étirements</button>
+          <button type="button" data-cat="exercices">Exercices</button>
+          <button type="button" data-cat="programmes">Programmes</button>
+          <button type="button" data-cat="principes">Principes</button>
+        </div>
+        <select id="libPhase" aria-label="Phase">
+          <option value="">Toutes les phases</option>
+          <option value="base">Base</option>
+          <option value="developpement">Développement</option>
+          <option value="specifique">Spécifique</option>
+          <option value="affutage">Affûtage</option>
+          <option value="recuperation">Récupération</option>
+        </select>
+        <input type="search" id="libSearch" placeholder="Rechercher" aria-label="Rechercher dans la bibliothèque">
+      </div>
+      <p class="act-sum" id="libSum" style="margin:0"></p>
+      <div id="lib"></div>
+    </section>
+
     <!-- Activités -->
     <section class="panel" id="tab-activites" role="tabpanel" data-panel="activites" hidden>
       <div>
@@ -650,6 +761,16 @@ legend{font-weight:650;margin-bottom:6px;padding:0;font-size:15px}
     <button class="btn ghost" type="button" id="clearSecrets">Effacer les clés</button>
     <button class="btn primary" type="button" id="saveSettings">Vérifier et enregistrer</button>
   </div>
+</dialog>
+
+<dialog id="libDlg" class="wide" aria-labelledby="libTitle">
+  <div class="dlg-h">
+    <button class="btn ghost icon back" type="button" id="libBack" aria-label="Retour" hidden><svg class="ico"><use href="#i-back"/></svg></button>
+    <div style="min-width:0;flex:1"><div class="muted" id="libKicker"></div><h3 id="libTitle"></h3></div>
+    <button class="btn ghost icon" type="button" id="libClose" aria-label="Fermer"><svg class="ico"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg-b" id="libBody"></div>
+  <div class="dlg-f" id="libFoot"></div>
 </dialog>
 
 <div id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAct" hidden></button></div>
@@ -767,7 +888,7 @@ function normalizePlan(p) {
 
 async function loadData() {
   const wasClean = PLAN && PLAN_FILE && !isDraft();
-  const [d, p] = await Promise.all([fetchBlob("data.enc.json"), fetchPlanBlob()]);
+  const [d, p] = await Promise.all([fetchBlob("data.enc.json"), fetchPlanBlob(), loadLib().catch(e => console.warn("bibliothèque indisponible :", e.message))]);
   DATA = await decrypt(d, PASS);
   PLAN_FILE = normalizePlan(p ? await decrypt(p, PASS) : {});
   if (!PLAN) { const dr = loadDraft(); PLAN = dr ? normalizePlan(dr) : structuredClone(PLAN_FILE); }
@@ -816,6 +937,7 @@ function statusFor(s) {
   if (min > 0) return {label: "Partiel", cls: "warn", key: "warn"};
   return s.date === today ? {label: "Aujourd'hui", cls: "warn", key: "plan"} : {label: "Manqué", cls: "bad", key: "bad"};
 }
+const ficheLink = s => s.model && LIB?.byId[s.model] ? ` <button type="button" class="linkbtn" data-fiche="${esc(s.model)}">${icon("book")}Fiche</button>` : "";
 const allSessions = () => (PLAN.weeks || []).flatMap((w, wi) => w.sessions.map((s, si) => ({s, wi, si})));
 const sportIco = (s, sm = false) => {
   const rest = !s.duration_min && s.sport === "other";
@@ -839,6 +961,7 @@ function renderToday() {
           ${st.key === "rest" ? "" : `<span class="pill ${st.cls}">${st.label}</span>`}
           ${act.min ? `<span>${fmtDur(act.min)} réalisé</span>` : ""}</div>
         ${s.notes ? `<div class="hero-notes">${esc(s.notes)}</div>` : ""}
+        ${ficheLink(s) ? `<div style="margin-top:6px">${ficheLink(s)}</div>` : ""}
       </div></div>`;
     }).join("");
   } else {
@@ -1124,7 +1247,7 @@ function sessionRow(s, wi, si) {
     <div class="sess-day"><span class="wd">${d.toLocaleDateString("fr-FR", {weekday: "short"}).replace(".", "")}</span><span class="dn">${d.getDate()}</span></div>
     ${sportIco(s, true)}
     <div style="min-width:0"><div class="t">${esc(s.title)}</div>
-      <div class="meta">${esc(s.type)}${s.duration_min ? ` · ${fmtDur(s.duration_min)}` : ""}</div>
+      <div class="meta">${esc(s.type)}${s.duration_min ? ` · ${fmtDur(s.duration_min)}` : ""}${ficheLink(s)}</div>
       ${s.notes ? `<div class="notes">${esc(s.notes)}</div>` : ""}</div>
     <div class="sess-res">${res}</div>
   </div>`;
@@ -1245,6 +1368,262 @@ function renderActivities() {
   $("#moreActs").textContent = `Afficher plus (${list.length - ACT_LIMIT} restantes)`;
 }
 
+/* ---------- bibliothèque : The Science of Cycling, chiffrée comme le plan ---------- */
+let LIB = null, LIB_KEY = null, LIB_CAT = "velo", LIB_Q = "", LIB_PHASE = "", LIB_STACK = [];
+const LIB_IMG = new Map();
+const PHASES = {base: "Base", developpement: "Développement", specifique: "Spécifique", affutage: "Affûtage", recuperation: "Récupération"};
+const INTENS = {facile: ["Facile", "ok"], moderee: ["Modérée", ""], difficile: ["Difficile", "warn"], tres_difficile: ["Très difficile", "bad"]};
+const PR_THEMES = {charge: "Charge et adaptation", zones: "Zones", periodisation: "Périodisation", intensite: "Intensité",
+  recuperation: "Récupération", nutrition: "Nutrition", renforcement: "Renforcement et étirements"};
+const DAYS_FR = {lun: "lun", mar: "mar", mer: "mer", jeu: "jeu", ven: "ven", sam: "sam", dim: "dim"};
+
+/* les images sont chiffrées avec une clé aléatoire contenue dans la bibliothèque : une seule dérivation PBKDF2 */
+async function loadLib() {
+  if (LIB) return;
+  const blob = await fetchBlob("bibliotheque.enc.json").catch(() => null);
+  if (!blob) return;
+  const lib = await decrypt(blob, PASS);
+  LIB_KEY = await crypto.subtle.importKey("raw", b64(lib.img_key), "AES-GCM", false, ["decrypt"]);
+  delete lib.img_key;
+  lib.byId = Object.fromEntries([...lib.seances, ...lib.exercices, ...lib.programmes].map(x => [x.id, x]));
+  LIB = lib;
+}
+async function libImage(fid) {
+  if (!LIB_IMG.has(fid)) LIB_IMG.set(fid, (async () => {
+    const r = await fetch(`biblio/${fid}.bin`);
+    if (!r.ok) throw new Error(`image ${r.status}`);
+    const buf = new Uint8Array(await r.arrayBuffer());
+    const pt = await crypto.subtle.decrypt({name: "AES-GCM", iv: buf.subarray(0, 12)}, LIB_KEY, buf.subarray(12));
+    return URL.createObjectURL(new Blob([pt], {type: "image/jpeg"}));
+  })());
+  return LIB_IMG.get(fid);
+}
+function clearLib() {
+  LIB_IMG.forEach(p => p.then(URL.revokeObjectURL, () => {}));
+  LIB_IMG.clear(); LIB = null; LIB_KEY = null; LIB_STACK = [];
+  if ($("#libDlg").open) $("#libDlg").close();
+}
+
+/* profil d'intensité d'une séance : [minutes, niveau de zone] par segment */
+const zLevel = z => { const n = String(z || "").match(/\d/g); return n ? Math.max(...n.map(Number)) : /max/.test(z) ? 5 : 2; };
+const parseMin = s => {
+  const m = String(s || "").match(/(\d+(?:[.,]\d+)?)(?:-\d+)?\s*(s\b|min|h)/);
+  if (!m) return /compl/.test(s || "") ? 3 : 0;
+  const v = parseFloat(m[1].replace(",", "."));
+  return m[2] === "h" ? v * 60 : m[2] === "min" ? v : v / 60;
+};
+const variantMinutes = v => {
+  if (!v || /×/.test(v)) return null;
+  const h = v.match(/(\d+)\s*h(?:\s*(\d+))?/); if (h) return +h[1] * 60 + (+h[2] || 0);
+  const m = v.match(/(\d+)\s*min/); return m ? +m[1] : null;
+};
+const isBike = t => t.categorie === "velo" || t.categorie === "test";
+function profile(t, variant) {
+  const segs = []; let fixed = 0, first = true;
+  const vi = variant?.match(/(\d+)\s*×\s*(\d+(?:[.,]\d+)?)\s*(s|min)/);
+  for (const b of t.structure) {
+    const z = zLevel(b.zone);
+    if (typeof b.reps === "number" && b.effort) {
+      let n = b.reps, e = parseMin(b.effort), r = parseMin(b.recup);
+      if (first && vi) {
+        n = +vi[1]; e = parseFloat(vi[2].replace(",", ".")) / (vi[3] === "s" ? 60 : 1);
+        const rm = variant.match(/r\.\s*(\d+)/), rs = variant.match(/\/\s*(\d+)\s*s/);
+        if (rm) r = +rm[1]; else if (rs) r = +rs[1] / 60; else if (/compl/.test(variant)) r = 3;
+      }
+      first = false;
+      for (let i = 0; i < n; i++) { segs.push([e, z]); if (r && i < n - 1) segs.push([r, 1]); }
+      fixed += n * e + (n - 1) * r;
+    } else if (b.duree_min) { segs.push([b.duree_min, z]); fixed += b.duree_min; }
+    else segs.push([null, z]);
+  }
+  const total = variantMinutes(variant) || t.duree_min || 60;
+  const fill = Math.max(10, total - fixed);
+  return segs.map(([m, z]) => [m ?? fill, z]);
+}
+const ZH = [0, 22, 38, 54, 70, 86, 100];
+const profHTML = (segs, cls = "") => `<div class="prof ${cls}" aria-hidden="true">${segs.map(([m, z]) =>
+  `<i style="flex-grow:${m.toFixed(2)};height:${ZH[z]}%;background:var(--z${z})"></i>`).join("")}</div>`;
+const zPill = z => `<span class="pill zp" style="--zc:var(--z${zLevel(z)})">${esc(z)}</span>`;
+
+/* séance du plan créée depuis une fiche : titre, durée, consigne préremplis, lien « model » vers la fiche */
+const TYPE_OF = {"velo-z1-recup": "Récupération", "velo-z2-endurance": "Endurance", "velo-z2-longue": "Sortie longue",
+  "velo-groupe-relances": "Route groupe", "velo-simulation-course": "Simulation"};
+const typeFor = t => ({renfo: "Renfo", etirement: "Étirements", test: "Test"})[t.categorie] || TYPE_OF[t.id] || "Intervalles";
+function templateNotes(t, variant) {
+  if (!isBike(t)) return t.structure.map(b => `${b.bloc} ${b.reps || ""}`.trim()).join(", ");
+  let first = true;
+  return t.structure.map(b => {
+    if (typeof b.reps === "number" && b.effort) {
+      const v = first && variant && /×/.test(variant); first = false;
+      return [b.bloc + " :", v ? variant : `${b.reps} × ${b.effort}`, b.zone, b.detail ? `(${b.detail})` : "", !v && b.recup ? `récup ${b.recup}` : ""].filter(Boolean).join(" ");
+    }
+    return [b.bloc, b.duree_min ? fmtDur(b.duree_min) : "", b.zone].filter(Boolean).join(" ");
+  }).join(" · ") + (t.consignes ? ". " + t.consignes : "");
+}
+function sessionFromTemplate(t, date, variant, dur) {
+  return {id: "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date,
+    sport: isBike(t) ? "bike" : "other", type: typeFor(t), title: variant ? `${t.nom} · ${variant}` : t.nom,
+    duration_min: Math.max(0, Math.round(dur || variantMinutes(variant) || t.duree_min || 0)), notes: templateNotes(t, variant), model: t.id};
+}
+
+/* ---------- rendu : bibliothèque ---------- */
+function seanceCard(s) {
+  const [il, ic] = INTENS[s.intensite] || ["", ""];
+  return `<button type="button" class="card lib-card" data-fiche="${esc(s.id)}">
+    <div class="t">${esc(s.nom)}</div>
+    ${isBike(s) ? profHTML(profile(s)) : ""}
+    <div class="o">${esc(s.objectif)}</div>
+    <div class="lib-meta"><span class="pill">${fmtDur(s.duree_min)}</span>${il ? `<span class="pill ${ic}">${il}</span>` : ""}${s.zones.map(zPill).join("")}${s.composee ? `<span class="pill" title="Assemblée à partir du livre">composée</span>` : ""}</div>
+  </button>`;
+}
+function renderLib() {
+  if (!LIB) { $("#lib").innerHTML = `<div class="card empty">Bibliothèque indisponible.</div>`; $("#libSum").textContent = ""; return; }
+  $$("#libSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cat === LIB_CAT));
+  const q = LIB_Q.trim().toLowerCase(), match = (...xs) => !q || xs.join(" ").toLowerCase().includes(q);
+  const seances = ["velo", "renfo", "etirement"].includes(LIB_CAT);
+  $("#libPhase").hidden = !seances;
+  let html = "", n = 0, what = "";
+  if (seances) {
+    const items = LIB.seances.filter(s => (s.categorie === LIB_CAT || (LIB_CAT === "velo" && s.categorie === "test"))
+      && (!LIB_PHASE || s.phases.includes(LIB_PHASE)) && match(s.nom, s.objectif, s.zones.join(" "), s.progression.join(" ")));
+    n = items.length; what = "séance";
+    html = `<div class="lib-grid">${items.map(seanceCard).join("")}</div>`;
+  } else if (LIB_CAT === "exercices") {
+    const items = LIB.exercices.filter(e => match(e.nom, e.nom_livre, e.groupe, e.muscles));
+    n = items.length; what = "exercice";
+    html = `<div class="lib-grid">${items.map(e => `<button type="button" class="card lib-card" data-fiche="${esc(e.id)}">
+      <div class="t">${esc(e.nom)}</div><div class="o">${esc(e.muscles)}</div>
+      <div class="lib-meta"><span class="pill ${e.categorie === "etirement" ? "ok" : ""}">${e.categorie === "etirement" ? "Étirement" : "Renforcement"}</span><span class="pill">${esc(e.groupe)}</span>${e.materiel ? `<span class="muted">${esc(e.materiel)}</span>` : ""}</div>
+    </button>`).join("")}</div>`;
+  } else if (LIB_CAT === "programmes") {
+    const items = LIB.programmes.filter(p => match(p.nom, p.discipline, p.description));
+    n = items.length; what = "programme";
+    html = `<div class="lib-grid">${items.map(p => {
+      const vols = p.semaines.map(w => w.volume_h), max = Math.max(...vols);
+      return `<button type="button" class="card lib-card" data-fiche="${esc(p.id)}">
+        <div class="t">${esc(p.nom)}</div>
+        ${profHTML(vols.map(v => [1, Math.max(1, Math.round(v / max * 5))]))}
+        <div class="o">${esc(p.description)}</div>
+        <div class="lib-meta"><span class="pill">${p.semaines_n} semaines</span><span class="pill">${fr1(Math.min(...vols))} à ${fr1(max)} h/sem.</span></div>
+      </button>`;
+    }).join("")}</div>`;
+  } else {
+    const pr = LIB.principes.filter(p => match(p.titre, p.texte));
+    n = pr.length; what = "principe";
+    const zones = `<section class="card"><h2>Zones d'entraînement (% de FTP)</h2><div class="ztable">${LIB.zones.map(z => `<div class="zrow" style="--zc:var(--z${z.z})">
+      <span class="zc">Z${z.z}</span><b>${esc(z.nom)}</b><span class="num">${esc(z.ftp)}</span><span class="ef">${esc(z.ressenti)}. ${esc(z.effet)}</span></div>`).join("")}</div>
+      <p class="src" style="margin-top:10px">FTP estimée = 95 % de la puissance moyenne d'un test de 20 min. Tes règles du plan (zones FC) restent la référence tant que la FTP n'est pas mesurée.</p></section>`;
+    const groups = Object.entries(PR_THEMES).map(([k, lbl]) => {
+      const items = pr.filter(p => p.theme === k);
+      return items.length ? `<section class="card"><h2>${esc(lbl)}</h2><div class="princ">${items.map(p => `<div><b>${esc(p.titre)}</b><p>${esc(p.texte)}</p><span class="src">${esc(p.source)}</span></div>`).join("")}</div></section>` : "";
+    }).join("");
+    html = `<div class="lib-sec">${q ? "" : zones}${groups}</div>`;
+  }
+  $("#libSum").textContent = `${n} ${what}${n > 1 ? "s" : ""} · ${LIB.source}`;
+  $("#lib").innerHTML = n || !seances ? html : `<div class="card empty">Aucun résultat.</div>`;
+}
+
+/* fiche détaillée : séance, exercice ou programme ; LIB_STACK permet de revenir à la fiche précédente */
+function openFiche(id, push = false) {
+  const x = LIB?.byId[id]; if (!x) return;
+  if (!push) LIB_STACK = [];
+  if (LIB_STACK.at(-1) !== id) LIB_STACK.push(id);
+  $("#libBack").hidden = LIB_STACK.length < 2;
+  $("#libTitle").textContent = x.nom;
+  if (x.semaines) ficheProgramme(x); else if (x.execution) ficheExercice(x); else ficheSeance(x);
+  if (!$("#libDlg").open) $("#libDlg").showModal();
+  $("#libBody").scrollTop = 0;
+}
+function ficheSeance(t) {
+  const [il, ic] = INTENS[t.intensite] || ["", ""];
+  const bike = isBike(t);
+  $("#libKicker").textContent = {velo: "Séance vélo", test: "Test", renfo: "Séance de renforcement", etirement: "Étirements"}[t.categorie] || "Séance";
+  const steps = t.structure.map(b => {
+    if (b.detail?.startsWith?.("ex-") || b.detail?.startsWith?.("et-"))
+      return `<li><button type="button" class="linkbtn" data-push="${esc(b.detail)}">${esc(b.bloc)}</button> <span class="num">${esc(b.reps || "")}</span></li>`;
+    const iv = typeof b.reps === "number" && b.effort;
+    return `<li><b>${esc(b.bloc)}</b> ${iv ? `${b.reps} × ${esc(b.effort)}` : b.duree_min ? fmtDur(b.duree_min) : ""} ${b.zone ? zPill(b.zone) : ""}
+      ${b.detail || b.recup ? `<div class="d">${esc([b.detail, b.recup ? "récup " + b.recup : ""].filter(Boolean).join(" · "))}</div>` : ""}</li>`;
+  }).join("");
+  $("#libBody").innerHTML = `
+    <p class="lead">${esc(t.objectif)}</p>
+    <div class="lib-meta"><span class="pill">${fmtDur(t.duree_min)}</span>${il ? `<span class="pill ${ic}">${il}</span>` : ""}${t.zones.map(zPill).join("")}
+      ${t.phases.map(p => `<span class="pill">${esc(PHASES[p] || p)}</span>`).join("")}</div>
+    ${bike ? `<div id="libProf">${profHTML(profile(t), "big")}</div>` : ""}
+    <h4>Déroulé</h4><ol class="steps">${steps}</ol>
+    ${t.progression.length ? `<h4>Progression</h4><div class="chips">${t.progression.map(p => `<button type="button" class="chip" data-var="${esc(p)}">${esc(p)}</button>`).join("")}</div>` : ""}
+    ${t.consignes ? `<h4>Consignes</h4><p style="margin:0">${esc(t.consignes)}</p>` : ""}
+    ${t.precautions ? `<div class="note warn">${esc(t.precautions)}</div>` : ""}
+    <p class="src">Source : ${esc(LIB.source)}${t.source ? ", " + esc(t.source) : ""}${t.composee ? ". Séance composée à partir du livre, pas telle quelle dans le texte." : ""}</p>`;
+  const today = todayISO();
+  $("#libFoot").innerHTML = `<form class="lib-add" id="libAdd">
+    <label class="field">Date<input type="date" id="libDate" value="${today}" required></label>
+    ${t.progression.length ? `<label class="field var">Variante<select id="libVar"><option value="">Standard</option>${t.progression.map(p => `<option>${esc(p)}</option>`).join("")}</select></label>` : ""}
+    <label class="field">Durée (min)<input type="number" id="libDur" min="5" step="5" inputmode="numeric" value="${t.duree_min}"></label>
+    <button class="btn primary" type="submit">${icon("plus")}Ajouter au plan</button>
+  </form>`;
+  const setVar = v => {
+    if ($("#libVar")) $("#libVar").value = v;
+    if (bike) $("#libProf").innerHTML = profHTML(profile(t, v), "big");
+    $("#libDur").value = variantMinutes(v) || t.duree_min;
+    $$("#libBody .chip").forEach(c => c.classList.toggle("btn-on", c.dataset.var === v));
+  };
+  $("#libVar")?.addEventListener("change", e => setVar(e.target.value));
+  $("#libBody .chips")?.addEventListener("click", e => { const c = e.target.closest("[data-var]"); if (c) setVar(c.dataset.var); });
+  $("#libAdd").addEventListener("submit", e => {
+    e.preventDefault();
+    const date = $("#libDate").value; if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const s = sessionFromTemplate(t, date, $("#libVar")?.value || "", +$("#libDur").value);
+    const mon = mondayOf(date);
+    let w = PLAN.weeks.find(x => x.start === mon);
+    if (!w) { w = {start: mon, focus: "", target_h: 0, sessions: []}; PLAN.weeks.push(w); sortWeeks(PLAN); }
+    w.sessions.push(s);
+    saveDraft(); renderPlan(); renderToday();
+    $("#libDlg").close();
+    toast(`« ${s.title} » ajoutée au ${fmtDay(date)}`, "Voir le plan", () => showTab("plan"));
+  });
+}
+function ficheExercice(x) {
+  $("#libKicker").textContent = x.categorie === "etirement" ? "Étirement" : `Renforcement · ${x.groupe}`;
+  const used = LIB.seances.filter(s => s.structure.some(b => b.detail === x.id));
+  $("#libBody").innerHTML = `
+    <p class="lead">${esc(x.interet)}</p>
+    <dl class="kv"><dt>Muscles</dt><dd>${esc(x.muscles)}</dd>${x.materiel ? `<dt>Matériel</dt><dd>${esc(x.materiel)}</dd>` : ""}<dt>Dosage</dt><dd>${esc(x.dosage)}</dd></dl>
+    <h4>Exécution</h4><ol class="steps">${x.execution.map(s => `<li>${esc(s)}</li>`).join("")}</ol>
+    ${x.erreurs ? `<div class="note warn"><b>À éviter :</b> ${esc(x.erreurs)}</div>` : ""}
+    ${x.variantes.length ? `<h4>Variantes</h4><ul class="steps">${x.variantes.map(v => `<li><b>${esc(v.nom)}</b><div class="d">${esc(v.execution)}</div></li>`).join("")}</ul>` : ""}
+    ${x.images.length ? `<h4>Illustrations</h4><div class="gal">${x.images.map(f => `<figure data-img="${esc(f)}"><span class="muted">Déchiffrement…</span></figure>`).join("")}</div>` : ""}
+    ${used.length ? `<h4>Dans les séances</h4><div class="row-actions">${used.map(s => `<button type="button" class="linkbtn" data-push="${esc(s.id)}">${esc(s.nom)}</button>`).join("")}</div>` : ""}
+    <p class="src">Source : ${esc(LIB.source)}, exercices de renforcement et d'étirement.</p>`;
+  $("#libFoot").innerHTML = "";
+  $$("#libBody [data-img]").forEach(async fig => {
+    try { const url = await libImage(fig.dataset.img); fig.innerHTML = `<img src="${url}" alt="${esc(x.nom)}" loading="lazy">`; }
+    catch { fig.innerHTML = `<span class="muted">Image indisponible</span>`; }
+  });
+}
+function ficheProgramme(p) {
+  $("#libKicker").textContent = `Programme · ${p.discipline}`;
+  const vols = p.semaines.map(w => w.volume_h), max = Math.max(...vols);
+  const bars = p.semaines.map(w => `<div title="S${w.n} · ${esc(w.phase)} · ${fr1(w.volume_h)} h"><span class="num">${fr1(w.volume_h)}</span>
+    <i class="${/Récup|Course|Affût/.test(w.phase) ? "rec" : ""}" style="height:${w.volume_h / max * 70}%"></i>S${w.n}</div>`).join("");
+  const weeks = p.semaines.map((w, i) => `<details class="pweek" ${i === 0 ? "open" : ""}>
+    <summary><span><b>S${w.n}</b> · ${esc(w.phase)}${w.focus && w.focus !== w.phase ? ` · <span class="muted">${esc(w.focus)}</span>` : ""}</span><span class="num muted">${fr1(w.volume_h)} h <svg class="ico chev" style="width:15px;height:15px;vertical-align:-3px"><use href="#i-chev"/></svg></span></summary>
+    ${Object.entries(w.jours).map(([d, j]) => {
+      const t = j.seance && LIB.byId[j.seance];
+      return `<div class="pday ${j.texte === "Repos" ? "rest" : ""}"><span class="d">${DAYS_FR[d] || d}</span><span>${esc(j.texte)}</span>${t ? `<button type="button" class="linkbtn" data-push="${esc(t.id)}">Fiche</button>` : "<span></span>"}</div>`;
+    }).join("")}
+  </details>`).join("");
+  $("#libBody").innerHTML = `
+    <p class="lead">${esc(p.description)}</p>
+    <h4>Phases</h4><ul class="steps">${p.phases.map(f => `<li><b>S${esc(f.semaines)} · ${esc(f.nom)}</b>${f.objectif ? ` <span class="d">${esc(f.objectif)}</span>` : ""}</li>`).join("")}</ul>
+    <h4>Volume par semaine (h)</h4><div class="vbars">${bars}</div>
+    ${(p.remarques || []).map(r => `<div class="note warn">${esc(r)}</div>`).join("")}
+    <h4>Semaines</h4><div>${weeks}</div>
+    <h4>Notes</h4><ul class="steps">${p.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>
+    <p class="src">Source : ${esc(LIB.source)}, ${esc(p.source)}. Volumes calculés à partir des durées indiquées (jour de course non compté).</p>`;
+  $("#libFoot").innerHTML = "";
+}
+
 /* ---------- en-tête ---------- */
 function renderUpdated() {
   const g = new Date(DATA.generated);
@@ -1258,7 +1637,7 @@ function renderUpdated() {
 
 function renderAll() {
   renderUpdated();
-  renderToday(); renderKpis(); renderCharts(); renderPlan(); renderRules(); renderAnalysis(); renderQuality(); renderActivities();
+  renderToday(); renderKpis(); renderCharts(); renderPlan(); renderRules(); renderAnalysis(); renderQuality(); renderActivities(); renderLib();
   renderCoach();
 }
 
@@ -1274,7 +1653,7 @@ function toast(msg, action, onAction) {
 }
 
 /* ---------- onglets ---------- */
-const TABS = ["apercu", "plan", "coach", "activites", "notes"];
+const TABS = ["apercu", "plan", "coach", "bibliotheque", "activites", "notes"];
 function showTab(name, focus = false) {
   if (!TABS.includes(name)) name = "apercu";
   $$(".tab").forEach(t => { const on = t.dataset.tab === name; t.setAttribute("aria-selected", on); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
@@ -1399,6 +1778,20 @@ $("#moreActs").addEventListener("click", () => { ACT_LIMIT += 30; renderActiviti
 let resizeT = null;
 new ResizeObserver(() => { clearTimeout(resizeT); resizeT = setTimeout(() => DATA && renderCharts(), 80); }).observe($(".wrap"));
 
+$("#libSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  LIB_CAT = b.dataset.cat; renderLib();
+});
+$("#libPhase").addEventListener("change", e => { LIB_PHASE = e.target.value; renderLib(); });
+$("#libSearch").addEventListener("input", e => { LIB_Q = e.target.value; renderLib(); });
+document.addEventListener("click", e => {
+  const f = e.target.closest("[data-fiche]"); if (f) { openFiche(f.dataset.fiche); return; }
+  const p = e.target.closest("#libDlg [data-push]"); if (p) openFiche(p.dataset.push, true);
+});
+$("#libBack").addEventListener("click", () => { LIB_STACK.pop(); const id = LIB_STACK.pop(); if (id) openFiche(id, true); });
+$("#libClose").addEventListener("click", () => $("#libDlg").close());
+$("#libDlg").addEventListener("click", e => { if (e.target === $("#libDlg")) $("#libDlg").close(); });
+
 /* ---------- rafraîchissement ---------- */
 const editing = () => document.activeElement?.closest?.("#plan") && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
 async function refresh(manual) {
@@ -1448,7 +1841,7 @@ $("#showPass").addEventListener("click", () => {
 
 $("#lock").addEventListener("click", () => {
   PASS = null; DATA = null; PLAN_FILE = null; PLAN = null; SECRETS = {};
-  resetCoach();
+  resetCoach(); clearLib();
   $("#app").hidden = true; $("#gate").hidden = false;
   $("#pass").value = ""; $("#pass").focus();
 });
@@ -1549,7 +1942,16 @@ Règles :
 - Santé : en cas de symptômes (fièvre, douleur thoracique, essoufflement anormal, douleur qui persiste), recommande le repos et un avis médical. Tu n'es pas médecin.
 - Pour modifier le plan, appelle toujours l'outil proposer_modifications_plan, jamais une modification seulement décrite en texte. Regroupe toutes les modifications dans un seul appel et utilise les id de séances existants. L'athlète accepte ou refuse : ne considère rien comme appliqué avant sa réponse.
 - Accompagne chaque proposition de 2 à 4 phrases qui expliquent pourquoi.
-- Dates au format AAAA-MM-JJ. sport vaut bike, run ou other. Un jour de repos = pas de séance ce jour-là.`;
+- Dates au format AAAA-MM-JJ. sport vaut bike, run ou other. Un jour de repos = pas de séance ce jour-là.
+
+Bibliothèque (base de ta méthode) : le premier message contient aussi « bibliotheque », tirée du livre The Science of Cycling (David Bailey) : zones en % de FTP, principes, catalogue de séances (vélo, test, renforcement, étirements) avec leurs progressions, liste des exercices et résumé de 7 programmes types.
+- Priorité : règles de l'athlète, puis le livre, puis les règles générales ci-dessus.
+- Construis et ajuste le plan selon les principes du livre : distribution polarisée (80-90 % du temps en Z1-Z2, 10-20 % en Z4-Z5, peu de Z3), 2 à 3 semaines de charge puis une semaine allégée, au moins un jour de repos par semaine, affûtage de 1 à 2 semaines (volume réduit, intensité maintenue), progression par l'intensité, la durée des efforts ou le ratio effort/récupération.
+- Chaque séance que tu proposes vient du catalogue : passe son id dans « modele » et le dosage choisi dans « variante » (une des progressions de la fiche, ou une adaptation proche). Le titre, la durée et la consigne sont alors préremplis : ne les donne que pour les adapter. Si aucune séance ne convient, dis-le et propose une séance libre.
+- Adapte le dosage au niveau et au volume réel de l'athlète. Les programmes du livre (5 à 16 h par semaine) sont des exemples pour des compétiteurs : inspire-toi de leur structure, ne les copie pas.
+- Les zones du livre sont en % de FTP. Sans FTP mesurée, traduis-les avec les zones FC des règles de l'athlète et la sensation, et dis-le.
+- Appelle consulter_bibliotheque pour lire la fiche complète d'une séance, d'un exercice ou d'un programme (détail jour par jour) avant de t'en inspirer précisément.
+- Quand une recommandation s'appuie sur un principe du livre, nomme-le brièvement (par ex. « principe du livre : vagues de charge »).`;
 
 const S = (type, extra = {}) => ({type, ...extra});
 const COACH_TOOLS = [{functionDeclarations: [{
@@ -1569,6 +1971,8 @@ const COACH_TOOLS = [{functionDeclarations: [{
           titre: S("STRING"),
           duree_min: S("INTEGER"),
           consigne: S("STRING", {description: "consigne d'exécution (zones, FC, sensations)"}),
+          modele: S("STRING", {description: "id d'une séance de la bibliothèque (ajouter_seance, modifier_seance) : titre, durée et consigne préremplis depuis la fiche"}),
+          variante: S("STRING", {description: "dosage choisi parmi les progressions de la fiche, ex. « 4 × 4 min (r. 4-5) » ou « 2 h 30 »"}),
           annulee: S("BOOLEAN"),
           focus: S("STRING", {description: "objectif de la semaine"}),
           cible_h: S("NUMBER", {description: "volume cible de la semaine en heures"}),
@@ -1580,7 +1984,32 @@ const COACH_TOOLS = [{functionDeclarations: [{
     },
     required: ["resume", "operations"]
   })
+}, {
+  name: "consulter_bibliotheque",
+  description: "Renvoie la fiche complète d'une séance, d'un exercice ou d'un programme de la bibliothèque (structure, progressions, consignes ; pour un programme, le détail jour par jour).",
+  parameters: S("OBJECT", {properties: {id: S("STRING", {description: "id de la séance, de l'exercice ou du programme"})}, required: ["id"]})
 }]}];
+
+/* catalogue compact envoyé une fois ; les fiches complètes passent par consulter_bibliotheque */
+function libContext() {
+  if (!LIB) return undefined;
+  return {
+    source: LIB.source,
+    zones: LIB.zones.map(z => `Z${z.z} ${z.nom} : ${z.ftp} FTP, ${z.ressenti}`),
+    principes: LIB.principes.map(p => ({titre: p.titre, texte: p.texte})),
+    seances: LIB.seances.map(s => ({id: s.id, categorie: s.categorie, nom: s.nom, objectif: s.objectif, phases: s.phases, duree_min: s.duree_min,
+      intensite: s.intensite, deroule: templateNotes(s), progressions: s.progression.length ? s.progression : undefined, composee: s.composee || undefined})),
+    exercices: LIB.exercices.map(e => `${e.id} : ${e.nom} (${e.categorie === "etirement" ? "étirement" : e.groupe})`),
+    programmes: LIB.programmes.map(p => ({id: p.id, nom: p.nom, semaines: p.semaines_n, phases: p.phases.map(f => `S${f.semaines} ${f.nom}`).join(", "),
+      volume_h_par_semaine: p.semaines.map(w => w.volume_h)}))
+  };
+}
+function libLookup(id) {
+  const x = LIB?.byId[id];
+  if (!x) return {erreur: `id inconnu : ${id}`};
+  if (x.execution) { const {images, ...rest} = x; return rest; }
+  return x;
+}
 
 /* contexte envoyé au modèle : ni noms d'activités, ni heures de départ, ni identifiants Strava */
 function coachContext() {
@@ -1600,11 +2029,14 @@ function coachContext() {
       saison: PLAN.season, regles: PLAN.rules,
       semaines: PLAN.weeks.map(w => ({semaine: w.start, focus: w.focus, cible_h: w.target_h, seances: w.sessions.map(s => ({
         id: s.id, date: s.date, sport: s.sport, type_seance: s.type, titre: s.title, duree_min: s.duration_min, consigne: s.notes || undefined,
-        annulee: s.skip || undefined, statut: statusFor(s).label, realise_min: actualFor(s).min}))})),
+        annulee: s.skip || undefined, modele: s.model || undefined, statut: statusFor(s).label, realise_min: actualFor(s).min}))})),
       analyses_recentes: [...PLAN.analysis].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
-    }
+    },
+    bibliotheque: libContext()
   });
 }
+
+const libTemplate = id => { const t = LIB?.byId[id]; if (!t?.structure) throw new Error(`fiche « ${id} » absente de la bibliothèque`); return t; };
 
 /* applique les opérations sur une copie du plan et décrit chaque changement */
 function applyOps(base, ops) {
@@ -1624,13 +2056,22 @@ function applyOps(base, ops) {
       if (op.type === "modifier_seance" || op.type === "supprimer_seance") {
         const f = findS(op.seance_id); if (!f) throw new Error(`séance ${op.seance_id} introuvable`);
         if (op.type === "supprimer_seance") { f.w.sessions.splice(f.i, 1); lines.push({k: "del", what: label(f.s)}); continue; }
-        const before = {...f.s}, chg = [];
-        for (const [k, field, fmt] of FIELDS) {
-          if (op[k] === undefined || op[k] === before[field]) continue;
+        const before = {...f.s};
+        /* rattachement à une fiche : les champs non fournis viennent de la fiche */
+        if (op.modele && op.modele !== before.model) {
+          const t = libTemplate(op.modele), base = sessionFromTemplate(t, f.s.date, op.variante, op.duree_min);
+          for (const [k, field] of FIELDS) if (op[k] === undefined && k !== "date" && k !== "annulee") f.s[field] = base[field];
+          f.s.model = t.id;
+        }
+        for (const [k, field] of FIELDS) {
+          if (op[k] === undefined) continue;
           if (k === "date" && !validDate(op[k])) throw new Error(`date invalide ${op[k]}`);
           f.s[field] = k === "duree_min" ? Math.max(0, Math.round(op[k])) : op[k];
-          chg.push(`<s>${esc(fmt(before[field]))}</s> → <ins>${esc(fmt(f.s[field]))}</ins>`);
         }
+        const nv = (field, v) => field === "skip" ? !!v : v ?? "";
+        const chg = FIELDS.filter(([, field]) => nv(field, f.s[field]) !== nv(field, before[field]))
+          .map(([, field, fmt]) => `<s>${esc(fmt(before[field]))}</s> → <ins>${esc(fmt(f.s[field]))}</ins>`);
+        if (f.s.model !== before.model) chg.unshift(`fiche : <ins>${esc(LIB.byId[f.s.model].nom)}</ins>`);
         if (!chg.length) continue;
         /* changement de date vers une autre semaine : déplacer la séance */
         const mon = mondayOf(f.s.date);
@@ -1638,10 +2079,16 @@ function applyOps(base, ops) {
         lines.push({k: "mod", what: label(before), chg: chg.join("<br>")});
       } else if (op.type === "ajouter_seance") {
         if (!validDate(op.date)) throw new Error("ajout de séance sans date valide");
-        const s = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: op.date, sport: op.sport || "bike",
-          type: op.type_seance || "", title: op.titre || "Séance", duration_min: Math.max(0, Math.round(op.duree_min || 0)), notes: op.consigne || ""};
+        const t = op.modele ? libTemplate(op.modele) : null;
+        const s = t ? sessionFromTemplate(t, op.date, op.variante, op.duree_min)
+          : {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: op.date, sport: "bike", type: "", title: "Séance", duration_min: 0, notes: ""};
+        if (op.sport) s.sport = op.sport;
+        if (op.type_seance) s.type = op.type_seance;
+        if (op.titre) s.title = op.titre;
+        if (op.duree_min !== undefined) s.duration_min = Math.max(0, Math.round(op.duree_min));
+        if (op.consigne) s.notes = op.consigne;
         weekFor(mondayOf(op.date), true).sessions.push(s);
-        lines.push({k: "add", what: label(s), chg: esc([s.type, s.duration_min ? fmtDur(s.duration_min) : "", s.notes].filter(Boolean).join(" · "))});
+        lines.push({k: "add", what: label(s), chg: (t ? `<span class="pill">${icon("book")}${esc(t.nom)}</span> ` : "") + esc([s.type, s.duration_min ? fmtDur(s.duration_min) : "", s.notes].filter(Boolean).join(" · "))});
       } else if (op.type === "modifier_semaine" || op.type === "ajouter_semaine") {
         if (!validDate(op.semaine)) throw new Error("semaine sans date valide");
         const start = mondayOf(op.semaine);
@@ -1664,7 +2111,7 @@ function applyOps(base, ops) {
 }
 
 let CHAT = [], COACH_BUSY = false, PENDING = null;
-const CHIPS = ["Analyse ma semaine", "Comment est ma fatigue ?", "Adapte la semaine prochaine", "Prépare les 4 prochaines semaines"];
+const CHIPS = ["Analyse ma semaine", "Comment est ma fatigue ?", "Adapte la semaine prochaine", "Prépare les 4 prochaines semaines selon le livre", "Quel renforcement cette semaine ?"];
 
 function resetCoach() { CHAT = []; PENDING = null; $("#chat").innerHTML = ""; }
 
@@ -1701,7 +2148,7 @@ function renderCoach() {
   if (!CHAT.length && !$("#chat .msg")) {
     $("#chat").innerHTML = `<div class="coach-empty">
       <div class="gate-logo"><svg class="ico"><use href="#i-spark"/></svg></div>
-      <div><b style="color:var(--fg)">Ton coach</b><br>Il analyse ta charge, ton volume et le plan, et peut ajuster les séances. Chaque modification t'est proposée avant d'être appliquée.</div>
+      <div><b style="color:var(--fg)">Ton coach</b><br>Il analyse ta charge, ton volume et le plan, et ajuste les séances en s'appuyant sur la bibliothèque du livre. Chaque modification t'est proposée avant d'être appliquée.</div>
       ${ready ? "" : `<button class="btn primary" type="button" id="coachSetup">${icon("gear")}Configurer le coach</button>`}
     </div>`;
     $("#coachSetup")?.addEventListener("click", () => openSettings("Ajoute une clé Gemini pour utiliser le coach."));
@@ -1725,39 +2172,51 @@ async function gemini(contents) {
   return c.content;
 }
 
-async function coachRun() {
+const respond = (c, response) => ({functionResponse: {...(c.id ? {id: c.id} : {}), name: c.name, response}});
+async function coachRun(depth = 0) {
   COACH_BUSY = true; renderCoach();
   const typing = addMsg("ai typing", "<i></i><i></i><i></i>");
+  let again = false;
   try {
     const content = await gemini(CHAT);
     CHAT.push({role: "model", parts: content.parts});
     const text = content.parts.filter(p => p.text && !p.thought).map(p => p.text).join("").trim();
     if (text) addMsg("ai", md(text));
     const calls = content.parts.filter(p => p.functionCall).map(p => p.functionCall);
-    if (calls.length) showProposal(calls);
-    return true;
+    const looks = calls.filter(c => c.name === "consulter_bibliotheque"), props = calls.filter(c => c.name !== "consulter_bibliotheque");
+    const lookParts = looks.map(c => {
+      addMsg("tool", `${icon("book")}Consulte « ${esc(LIB?.byId[c.args?.id]?.nom || c.args?.id || "?")} »`);
+      return respond(c, libLookup(c.args?.id));
+    });
+    if (props.length) showProposal(props, lookParts);
+    else if (lookParts.length) {
+      CHAT.push({role: "user", parts: lookParts});
+      if (depth < 5) again = true; else addMsg("err", "Le coach a consulté trop de fiches d'affilée. Relance ta demande.");
+    }
   } catch (e) {
     addMsg("err", esc(e.message));
     return false;
   } finally {
     typing.remove(); COACH_BUSY = false; renderCoach();
   }
+  return again ? coachRun(depth + 1) : true;
 }
 
 async function coachSend(text) {
   text = text.trim();
   if (!text || COACH_BUSY || PENDING) return;
   if (!CHAT.length) $("#chat").innerHTML = "";
-  const parts = CHAT.length ? [] : [{text: "Données d'entraînement et plan actuels (JSON) :\n" + coachContext()}];
+  const parts = CHAT.length ? [] : [{text: "Données d'entraînement, plan actuel et bibliothèque (JSON) :\n" + coachContext()}];
   parts.push({text});
+  const n0 = CHAT.length;
   CHAT.push({role: "user", parts});
   addMsg("user", esc(text));
   $("#coachInput").value = ""; autoGrow();
-  /* en cas d'échec, retirer le message pour pouvoir le renvoyer */
-  if (!await coachRun()) { CHAT.pop(); $("#coachInput").value = text; autoGrow(); }
+  /* en cas d'échec, revenir à l'état d'avant le message pour pouvoir le renvoyer */
+  if (!await coachRun()) { CHAT.length = n0; $("#coachInput").value = text; autoGrow(); }
 }
 
-function showProposal(calls) {
+function showProposal(calls, extra = []) {
   const ops = calls.flatMap(c => c.args?.operations || []);
   const resume = calls.map(c => c.args?.resume).filter(Boolean).join(" ");
   const {plan, lines, errors} = applyOps(PLAN, ops);
@@ -1777,8 +2236,8 @@ function showProposal(calls) {
     el.querySelector(".row-actions").outerHTML = `<div class="done">${ok ? "Appliqué au plan." + (SECRETS.gh ? " Pense à l'enregistrer depuis l'onglet Plan." : "") : "Refusé."}</div>`;
     if (ok) { PLAN = plan; saveDraft(); renderAll(); }
     PENDING = null;
-    CHAT.push({role: "user", parts: calls.map(c => ({functionResponse: {...(c.id ? {id: c.id} : {}), name: c.name,
-      response: {resultat: ok ? "appliqué par l'athlète (pas encore enregistré)" : "refusé par l'athlète", erreurs: errors}}}))});
+    CHAT.push({role: "user", parts: [...extra, ...calls.map(c => respond(c,
+      {resultat: ok ? "appliqué par l'athlète (pas encore enregistré)" : "refusé par l'athlète", erreurs: errors}))]});
     await coachRun();
   });
   renderCoach();

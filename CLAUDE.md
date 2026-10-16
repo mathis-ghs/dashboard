@@ -11,12 +11,17 @@ URL : https://mathis-ghs.github.io/dashboard/
 docs/index.html                Page unique : déchiffrement WebCrypto, rendu, plan éditable et enregistrable, coach IA
 docs/data.enc.json             Données Strava chiffrées (généré par fetch_strava.py, commit du bot)
 docs/plan.enc.json             Plan chiffré : commité depuis la page (API GitHub) ou par encrypt_plan.py
+docs/bibliotheque.enc.json     Bibliothèque d'entraînement chiffrée (encrypt_bibliotheque.py)
+docs/biblio/*.bin              Illustrations des exercices, chiffrées une à une (clé dans la bibliothèque)
 tools/fetch_strava.py          Strava → métriques → chiffrement → docs/data.enc.json
 tools/encrypt_plan.py          private/plan.json → docs/plan.enc.json
+tools/encrypt_bibliotheque.py  private/bibliotheque.json + private/livre/images → docs/bibliotheque.enc.json + docs/biblio/
 tools/decrypt_plan.py          docs/plan.enc.json → private/plan.json (à lancer avant toute édition locale)
 tools/crypto_util.py           AES-GCM, PBKDF2-SHA256, utilisé par les scripts Python
 requirements.txt               requests==2.32.3, cryptography==43.0.3
 private/plan.json              Plan source, git-ignoré, JAMAIS commité
+private/bibliotheque.json      Bibliothèque source (générée), git-ignorée
+private/livre/                 Livre « The Science of Cycling » (md, pages), build_bibliotheque.py, images réduites, img.key : git-ignoré
 HANDOFF.md                     Notes de passation, git-ignoré
 ```
 
@@ -47,10 +52,11 @@ HANDOFF.md                     Notes de passation, git-ignoré
 ## Structure de `docs/index.html`
 
 - Éléments d'identification : `#gate`, `#unlockForm`, `#pass`, `#app`, `#updated`, `#refresh`, `#theme`, `#settings`, `#lock`.
-- Cinq onglets (`showTab`, routage par hash `#apercu`, `#plan`, `#coach`, `#activites`, `#notes`). Sur mobile (< 640 px), la barre d'onglets passe en bas d'écran.
+- Six onglets (`showTab`, routage par hash `#apercu`, `#plan`, `#coach`, `#bibliotheque`, `#activites`, `#notes`). Sur mobile (< 640 px), la barre d'onglets passe en bas d'écran.
   - Aperçu : `#today` (séance du jour, prochaine séance, semaine en cours avec 7 pastilles et écart au plan : prévu à date, réalisé, écart, compte des séances), `#kpis` (CTL/ATL/TSB avec variation sur 7 j, jauge TSB, volume), `#chartForm` (CTL/ATL + panneau TSB, période 6 sem./3 mois/6 mois), `#chartWeeks` (heures par semaine empilées par sport, cible du plan).
   - Plan : `#plan` en lecture par défaut, bouton `#editPlan` pour passer en édition (séances, objectif et cible de chaque semaine, ajout et suppression de semaines). `#draftBar` apparaît quand le brouillon local diffère du plan enregistré, avec `#savePlan` (commit GitHub), `#resetPlan`, `#exportPlan`.
   - Coach : chat `#chat`, saisie `#coachForm` (voir « Coach IA »).
+  - Biblio : `#libSeg` (Vélo, Renfo, Étirements, Exercices, Programmes, Principes), `#libPhase`, `#libSearch`, liste `#lib`, fiche `#libDlg` (voir « Bibliothèque »).
   - Activités : filtres `#sportSeg` et `#actSearch`, liste `#acts` groupée par semaine avec lien vers Strava, `#quality`.
   - Notes : `#rules`, `#analysis`.
 - Fonctions de rendu : `renderToday`, `renderKpis`, `renderCharts` (`renderFormChart`, `renderWeeksChart`, survol + clavier), `renderPlan`, `renderRules`, `renderAnalysis`, `renderQuality`, `renderActivities`, orchestrées par `renderAll`. `indexData` construit `BY_DAY` et `WEEKS` (heures par semaine et par sport) à partir de `DATA.activities`.
@@ -58,6 +64,16 @@ HANDOFF.md                     Notes de passation, git-ignoré
 - Édition du plan : brouillon dans `localStorage` (`loadDraft`, `saveDraft`), local au navigateur, supprimé s'il redevient identique au plan chiffré. Suppression de séance annulable via le toast. Bouton d'export `#exportPlan` qui produit un `plan.json`.
 - Préférences par navigateur dans `localStorage` : `theme` (auto/clair/sombre), `range` (période du graphe de charge). La phrase de passe n'est jamais stockée : elle reste en mémoire le temps de la session, `#lock` l'efface.
 - Réglages (`#settingsDlg`, `openSettings`) : jeton GitHub, dépôt, clé Gemini, modèle. Stockés dans `localStorage["secrets"]`, chiffrés avec la phrase (`loadSecrets`, `storeSecrets`, même format que les fichiers chiffrés).
+
+## Bibliothèque d'entraînement (livre)
+
+- Source : « The Science of Cycling » (David Bailey). Contenu reformulé en français pour un usage personnel. Le livre lui-même reste dans `private/livre/`, jamais commité, jamais en clair dans `docs/`.
+- `private/livre/build_bibliotheque.py` génère `private/bibliotheque.json` : `zones` (Z1-Z6 en % FTP), `principes` (thème, titre, texte, source), `seances` (id, categorie velo/test/renfo/etirement, structure en blocs, progression, phases, intensite, composee), `exercices` (exécution, dosage, variantes, images), `programmes` (7 plans jour par jour, chaque jour lié à une séance type). `private/livre/alttext.txt` = descriptions accessibles de l'EPUB (`OEBPS/xhtml/AltText.xhtml` converti en texte) ; le tableau cyclocross est transcrit à la main dans le script (description EPUB erronée).
+- Séances `composee: true` : assemblées à partir du livre, pas telles quelles dans le texte (tempo, test FTP, routines d'étirement).
+- Chiffrement : bibliothèque comme le plan (phrase). Images : AES-GCM avec une clé aléatoire `private/livre/img.key`, transmise dans la bibliothèque chiffrée (`img_key`) ; format `iv || ct`, nom = HMAC(clé, nom) tronqué. Une image déjà présente n'est pas réécrite.
+- Page : `loadLib` (une fois par session), `libImage` (déchiffrement à la demande, URL blob en cache), `clearLib` au verrouillage. Rendu : `renderLib`, `openFiche` (`ficheSeance`, `ficheExercice`, `ficheProgramme`, pile `LIB_STACK` pour le retour), profil d'intensité `profile` / `profHTML`.
+- « Ajouter au plan » depuis une fiche : `sessionFromTemplate` (titre, durée, consigne, `type`, `sport`) avec un champ `model` = id de la séance. Le plan affiche un lien « Fiche » (`ficheLink`) dans l'Aperçu et le Plan.
+- Couleurs des zones : variables `--z1` à `--z6` (clair et sombre).
 
 ## Enregistrement du plan depuis la page
 
@@ -70,15 +86,17 @@ HANDOFF.md                     Notes de passation, git-ignoré
 
 - Gemini (offre gratuite Google AI Studio), appelé directement depuis le navigateur (`gemini`, endpoint `generateContent`). Modèles listés dynamiquement (`loadModels`), le Flash non Lite le plus récent par défaut.
 - En gratuit, Google peut utiliser les échanges pour entraîner ses modèles. Choix de l'utilisateur : `coachContext` n'envoie jamais les noms d'activités, les heures de départ ni les identifiants Strava (lieux et horaires). Ne pas ajouter ces champs.
-- Contexte envoyé une fois en tête de conversation : résumé de charge, 8 semaines de charge quotidienne et d'activités, 16 semaines de volume, plan complet (ids de séances, statut, réalisé), règles, 3 dernières analyses.
-- Un seul outil, `proposer_modifications_plan` (opérations `modifier_seance`, `ajouter_seance`, `supprimer_seance`, `modifier_semaine`, `ajouter_semaine`, `ajouter_analyse`). `applyOps` les applique sur une copie et produit un diff ; l'utilisateur accepte ou refuse (`showProposal`), puis la réponse de l'outil est renvoyée au modèle. Rien n'est enregistré sur GitHub sans clic sur « Enregistrer ».
+- Contexte envoyé une fois en tête de conversation : résumé de charge, 8 semaines de charge quotidienne et d'activités, 16 semaines de volume, plan complet (ids de séances, `modele`, statut, réalisé), règles, 3 dernières analyses, et `bibliotheque` (`libContext` : zones, principes, catalogue compact des séances avec progressions, liste des exercices, résumé des programmes).
+- `COACH_SYS` : le livre est la base de la méthode (priorité : règles de l'athlète, puis le livre, puis règles générales). Chaque séance proposée doit venir du catalogue (`modele` + `variante`).
+- Outil `consulter_bibliotheque(id)` : fiche complète (séance, exercice sans images, programme jour par jour), répondu automatiquement par la page (`libLookup`, boucle `coachRun`, 5 consultations d'affilée maximum).
+- Outil `proposer_modifications_plan` (opérations `modifier_seance`, `ajouter_seance`, `supprimer_seance`, `modifier_semaine`, `ajouter_semaine`, `ajouter_analyse` ; champs `modele` et `variante` pour préremplir depuis une fiche). `applyOps` les applique sur une copie et produit un diff ; l'utilisateur accepte ou refuse (`showProposal`), puis la réponse de l'outil est renvoyée au modèle. Rien n'est enregistré sur GitHub sans clic sur « Enregistrer ».
 - Conversation gardée en mémoire seulement (`CHAT`), effacée au verrouillage.
 - Couleurs des graphes : variables `--ctl`, `--atl`, `--tsb`, `--bike`, `--run`, `--other`, validées pour le daltonisme en clair et en sombre. Les changer avec précaution.
 - Le HTML est un fichier unique : CSS et JS inline, pas de build, pas de dépendance externe.
 
 ## Format de `private/plan.json`
 
-Clés de premier niveau : `updated`, `season`, `rules`, `weeks`, `analysis`. Les textes de `analysis` sont rendus en paragraphes (séparés par des lignes vides), le HTML est échappé.
+Clés de premier niveau : `updated`, `season`, `rules`, `weeks`, `analysis`. Séance : `id`, `date`, `sport`, `type`, `title`, `duration_min`, `notes`, `skip` (optionnel), `model` (optionnel, id d'une séance de la bibliothèque). Les textes de `analysis` sont rendus en paragraphes (séparés par des lignes vides), le HTML est échappé.
 
 Édition locale : `git pull`, `python tools/decrypt_plan.py` (le plan a pu être modifié depuis la page), éditer, `python tools/encrypt_plan.py`, puis commit de `docs/plan.enc.json`.
 
@@ -103,6 +121,10 @@ read -s "DASH_PASSPHRASE?Phrase de passe : "; echo
 export DASH_PASSPHRASE
 python tools/encrypt_plan.py
 unset DASH_PASSPHRASE
+
+# Bibliothèque : régénérer puis chiffrer (même phrase, saisie sans historique)
+python private/livre/build_bibliotheque.py
+python tools/encrypt_bibliotheque.py      # puis commit de docs/bibliotheque.enc.json et docs/biblio/
 
 # Prévisualiser
 cd docs && python3 -m http.server 8000
