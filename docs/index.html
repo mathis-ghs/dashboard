@@ -1025,6 +1025,10 @@ async function gh(path, opts = {}) {
   });
   if (!r.ok) {
     let m = ""; try { m = (await r.json()).message; } catch {}
+    /* jeton valide mais sans droit d'écriture sur ce dépôt (cas le plus fréquent avec un jeton « fine-grained ») */
+    if (r.status === 403 && /not accessible by (personal access|integration)/i.test(m))
+      throw new Error(`le jeton GitHub ne peut pas écrire dans ${repoOf()}. Sur GitHub, modifie le jeton : dépôt ${repoOf()} sélectionné, permission Contents en « Read and write ».`);
+    if (r.status === 401) throw new Error("jeton GitHub refusé ou expiré. Crée-en un nouveau et enregistre-le dans les réglages.");
     throw new Error(`GitHub ${r.status}${m ? ` (${m})` : ""}`);
   }
   return r;
