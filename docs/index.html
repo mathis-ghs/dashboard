@@ -2224,13 +2224,22 @@ const COACH_TOOLS = [{functionDeclarations: [{
   })
 }, {
   name: "consulter_bibliotheque",
-  description: "Renvoie la fiche complète d'une séance, d'un exercice ou d'un programme de la bibliothèque (structure, progressions, consignes ; pour un programme, le détail jour par jour).",
-  parameters: S("OBJECT", {properties: {id: S("STRING", {description: "id de la séance, de l'exercice ou du programme"})}, required: ["id"]})
+  description: "Renvoie la fiche complète d'une séance, d'un exercice ou d'un programme de la bibliothèque (structure, progressions, consignes ; pour un programme, le détail jour par jour), ou le texte de tous les principes avec l'id \"principes\".",
+  parameters: S("OBJECT", {properties: {id: S("STRING", {description: "id de la séance, de l'exercice ou du programme, ou \"principes\""})}, required: ["id"]})
 }]}];
 
 /* catalogue compact envoyé une fois ; les fiches complètes passent par consulter_bibliotheque */
-function libContext() {
+function libContext(compact = false) {
   if (!LIB) return undefined;
+  /* version abrégée (Groq, limites en tokens par minute) : le détail passe par consulter_bibliotheque */
+  if (compact) return {
+    note: "Catalogue abrégé : appelle consulter_bibliotheque(id) pour le déroulé, les progressions et les consignes d'une séance, d'un exercice ou d'un programme, et consulter_bibliotheque(\"principes\") pour le texte des principes.",
+    zones: LIB.zones.map(z => `Z${z.z} ${z.nom} : ${z.ftp} FTP`),
+    principes: LIB.principes.map(p => p.titre),
+    seances: LIB.seances.map(s => `${s.id} | ${s.nom} | ${s.categorie} | ${s.intensite || "?"} | ${s.duree_min ?? "?"} min`),
+    exercices: LIB.exercices.map(e => `${e.id} : ${e.nom}`),
+    programmes: LIB.programmes.map(p => `${p.id} : ${p.nom} (${p.semaines_n} sem.)`)
+  };
   return {
     source: LIB.source,
     zones: LIB.zones.map(z => `Z${z.z} ${z.nom} : ${z.ftp} FTP, ${z.ressenti}`),
@@ -2243,6 +2252,7 @@ function libContext() {
   };
 }
 function libLookup(id) {
+  if (id === "principes" && LIB) return {principes: LIB.principes.map(p => ({titre: p.titre, texte: p.texte}))};
   const x = LIB?.byId[id];
   if (!x) return {erreur: `id inconnu : ${id}`};
   if (x.execution) { const {images, ...rest} = x; return rest; }
@@ -2250,9 +2260,10 @@ function libLookup(id) {
 }
 
 /* contexte envoyé au modèle : ni noms d'activités, ni heures de départ, ni identifiants Strava */
-function coachContext() {
+function coachContext(compact = false) {
   const today = todayISO(), since = addDays(today, -55);
   const opt = v => v || v === 0 ? v : undefined;
+  if (compact) return coachContextCompact(today, opt);
   return JSON.stringify({
     aujourdhui: `${today} (${fmtLong(today)})`,
     resume_charge: DATA.summary,
@@ -2271,6 +2282,31 @@ function coachContext() {
       analyses_recentes: [...PLAN.analysis].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
     },
     bibliotheque: libContext()
+  });
+}
+
+/* version compacte pour Groq : 4 semaines de détail, données en colonnes, catalogue abrégé (environ trois fois plus court) */
+function coachContextCompact(today, opt) {
+  const since = addDays(today, -27);
+  return JSON.stringify({
+    aujourdhui: `${today} (${fmtLong(today)})`,
+    resume_charge: DATA.summary,
+    charge_quotidienne_4_semaines: {colonnes: ["date", "charge", "ctl", "atl", "tsb"],
+      lignes: DATA.daily.slice(-28).map(d => [d.d.slice(5), Math.round(d.load), Math.round(d.ctl), Math.round(d.atl), Math.round(d.tsb)])},
+    volume_par_semaine: {colonnes: ["lundi", "h", "velo_h", "course_h", "autre_h", "km", "re", "sorties"],
+      lignes: [...WEEKS.entries()].sort().slice(-10).map(([m, w]) => [m.slice(5), round1(w.h), round1(w.bike), round1(w.run), round1(w.other), Math.round(w.km), Math.round(w.re), w.n])},
+    activites_4_semaines: {colonnes: ["date", "sport", "home_trainer", "duree_min", "km", "dplus_m", "re", "fc_moy", "fc_max", "watts_moy"],
+      lignes: DATA.activities.filter(a => a.date >= since).map(a => [a.date.slice(5), sportFR(a.sport), a.trainer ? 1 : 0, Math.round(a.h * 60),
+        opt(a.km) ?? null, opt(a.elev) ?? null, opt(a.re) ?? null, a.hr_avg ? Math.round(a.hr_avg) : null, opt(a.hr_max) ?? null, a.w_avg ? Math.round(a.w_avg) : null])},
+    plan: {
+      saison: PLAN.season, regles: PLAN.rules,
+      semaines: PLAN.weeks.filter(w => w.start >= addDays(mondayOf(today), -7)).map(w => ({semaine: w.start, focus: w.focus, cible_h: w.target_h, seances: w.sessions.map(s => ({
+        id: s.id, date: s.date, sport: s.sport, type_seance: s.type, titre: s.title, duree_min: s.duration_min, consigne: s.notes || undefined,
+        annulee: s.skip || undefined, modele: s.model || undefined, statut: statusFor(s).label, realise_min: actualFor(s).min}))})),
+      semaines_passees_non_detaillees: PLAN.weeks.filter(w => w.start < addDays(mondayOf(today), -7)).length || undefined,
+      analyses_recentes: [...PLAN.analysis].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 1)
+    },
+    bibliotheque: libContext(true)
   });
 }
 
@@ -2439,7 +2475,7 @@ async function groq(contents, retry = 0) {
   if (!r.ok) {
     let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
     if (r.status === 401) throw new Error("Clé Groq refusée. Vérifie-la dans les réglages.");
-    if (r.status === 413 || /request too large/i.test(m)) throw new Error("Demande trop volumineuse pour la limite gratuite de ce modèle Groq. Choisis Llama 4 Scout dans les réglages.");
+    if (r.status === 413 || /request too large/i.test(m)) throw new Error(`Demande trop volumineuse pour la limite gratuite de ${SECRETS.groqModel}. Essaie un autre modèle dans les réglages (le détail de Groq : ${m || r.status}).`);
     /* limite par minute : attendre le délai indiqué par Groq, deux fois au plus */
     const wait = Math.ceil(parseFloat(r.headers.get("retry-after")) || 0);
     if (r.status === 429 && retry < 2 && wait > 0 && wait <= 60) {
@@ -2497,7 +2533,7 @@ async function coachSend(text) {
   text = text.trim();
   if (!text || COACH_BUSY || PENDING) return;
   if (!CHAT.length) $("#chat").innerHTML = "";
-  const parts = CHAT.length ? [] : [{text: "Données d'entraînement, plan actuel et bibliothèque (JSON) :\n" + coachContext()}];
+  const parts = CHAT.length ? [] : [{text: "Données d'entraînement, plan actuel et bibliothèque (JSON) :\n" + coachContext(provOf() === "groq")}];
   parts.push({text});
   const n0 = CHAT.length;
   CHAT.push({role: "user", parts});
