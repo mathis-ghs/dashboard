@@ -2114,7 +2114,20 @@ $("#gemKey").addEventListener("change", e => { const k = e.target.value.trim(); 
 const provOf = () => SECRETS.prov === "groq" ? "groq" : "gemini";
 const showProv = p => $$(".prov").forEach(d => d.hidden = d.dataset.prov !== p);
 $("#coachProv").addEventListener("change", e => showProv(e.target.value));
-const GROQ_PREF = ["meta-llama/llama-4-scout-17b-16e-instruct", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "moonshotai/kimi-k2-instruct"];
+const GROQ_PREF = ["meta-llama/llama-4-scout-17b-16e-instruct", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "moonshotai/kimi-k2-instruct-0905", "moonshotai/kimi-k2-instruct", "openai/gpt-oss-20b"];
+const NO_TOOLS = m => /tool calling.*not supported|does not support tool/i.test(m);
+/* mini-appel avec un outil factice : certains modèles Groq refusent les outils, indispensables au coach */
+async function checkGroqTools(key, model) {
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST", headers: {"Content-Type": "application/json", Authorization: `Bearer ${key}`},
+    body: JSON.stringify({model, max_tokens: 1, messages: [{role: "user", content: "ok"}],
+      tools: [{type: "function", function: {name: "test", description: "test", parameters: {type: "object", properties: {}}}}]})
+  });
+  if (r.ok || r.status === 429) return;
+  let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
+  if (r.status === 401) throw new Error("clé Groq refusée");
+  if (NO_TOOLS(m)) throw new Error(`${model} ne gère pas les outils du coach, choisis un autre modèle`);
+}
 async function loadGroqModels(key, selected) {
   const sel = $("#groqModel");
   sel.innerHTML = `<option value="">Chargement des modèles…</option>`;
@@ -2150,6 +2163,7 @@ $("#saveSettings").addEventListener("click", async () => {
       if (!next.groqModel) await loadGroqModels(next.groq);
       next.groqModel = $("#groqModel").value;
       if (!next.groqModel) throw new Error("choisir un modèle Groq");
+      if (next.prov === "groq") await checkGroqTools(next.groq, next.groqModel);
     }
     if (next.prov === "groq" && !next.groq) throw new Error("ajouter une clé Groq ou choisir Gemini");
     /* l'historique d'une conversation n'est pas transposable d'un fournisseur à l'autre */
@@ -2475,6 +2489,7 @@ async function groq(contents, retry = 0) {
   if (!r.ok) {
     let m = ""; try { m = (await r.json()).error?.message || ""; } catch {}
     if (r.status === 401) throw new Error("Clé Groq refusée. Vérifie-la dans les réglages.");
+    if (NO_TOOLS(m)) throw new Error(`Le modèle ${SECRETS.groqModel} ne gère pas les outils du coach (fiches de la bibliothèque, propositions de plan). Choisis-en un autre dans les réglages, par exemple Llama 4 Scout ou GPT-OSS 120B.`);
     if (r.status === 413 || /request too large/i.test(m)) throw new Error(`Demande trop volumineuse pour la limite gratuite de ${SECRETS.groqModel}. Essaie un autre modèle dans les réglages (le détail de Groq : ${m || r.status}).`);
     /* limite par minute : attendre le délai indiqué par Groq, deux fois au plus */
     const wait = Math.ceil(parseFloat(r.headers.get("retry-after")) || 0);
