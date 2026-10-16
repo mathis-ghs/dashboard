@@ -94,6 +94,17 @@ HANDOFF.md                     Notes de passation, git-ignoré
 - Couleurs des graphes : variables `--ctl`, `--atl`, `--tsb`, `--bike`, `--run`, `--other`, validées pour le daltonisme en clair et en sombre. Les changer avec précaution.
 - Le HTML est un fichier unique : CSS et JS inline, pas de build, pas de dépendance externe.
 
+## Direction artistique
+
+- Inspiration : dashboard « Lector » (Dribbble) pour la palette, keynote / apple.com pour la typographie, l'espace et le mouvement. Onglets en haut (barre iOS en bas sur mobile), pas de menu latéral.
+- Logo : symbole SVG `#i-logo` (A + V rouges néon sur fond noir), classes `.mark` / `.mark.lg`, favicon SVG inline, `docs/apple-touch-icon.png`. Le logo reste rouge néon quelle que soit la palette.
+- Jetons dans `:root` : neutres (`--bg`, `--fg`, `--fg2`, `--mut`, `--card`, `--line`, `--soft`), accent rose `--acc` / `--grad` / `--glow`, `--navy` ; cartes KPI `--g1` (cyan, forme/CTL), `--g2` (ambre, fatigue/ATL), `--g3` (violet, fraîcheur/TSB), `--g4` (rose, volume), chacune avec son encre `--gN-ink` (bleu nuit sur cyan et ambre, blanc sur violet et rose) ; rayons `--r-sm` / `--r` / `--r-lg` / `--r-pill` ; espacements `--sp-1` à `--sp-8` ; ombres `--sh-1`, `--sh-2`, `--kpi-sh` ; typographie `--font`, `--font-d`, `--fs-hero`, `--fs-h1`, `--fs-h2`, `--track-hero`, `--track-h` ; mouvement `--ease` (cubic-bezier(.22,1,.36,1)), `--dur`, `--dur-fast` ; `--tap` (44 px).
+- Contrastes vérifiés AA (texte secondaire, accent, texte des cartes KPI) en clair et en sombre. Les vérifier à nouveau si une teinte change.
+- Sombre : les jetons sombres sont déclarés deux fois (media query et `[data-theme="dark"]`). Le second sélecteur inclut `.keynote` : la porte d'entrée (`#gate`) et la séance du jour (`#today`) sont sombres dans les deux thèmes.
+- Composants : boutons en pilule (`.btn`, `.btn.primary` en dégradé), lien secondaire `.more-link` (« › »), en-têtes d'onglet `.page-h` / `.eyebrow` / `.page-title` / `.page-sub`, grille de 12 colonnes `.ov-grid` (8 + 4).
+- Navigation : `.top` translucide (saturate(180%) blur(20px)), classe `.compact` au-delà de 24 px de défilement (logo réduit, sous-titre masqué). La variable `--scroll` alimente la parallaxe du halo de `#today` ; `--px` / `--py` celle de `.gate-glow`.
+- Mouvement : entrée décalée des enfants de `.panel` à l'affichage d'un onglet (`@keyframes rise`), apparition au défilement via `reveal()` (classes `.rv` / `.rv.in`, IntersectionObserver). `reveal()` ne masque que les blocs sous la ligne de flottaison, au changement d'onglet : un nouveau rendu crée des éléments visibles d'emblée. `prefers-reduced-motion` coupe tout.
+
 ## Format de `private/plan.json`
 
 Clés de premier niveau : `updated`, `season`, `rules`, `weeks`, `analysis`. Séance : `id`, `date`, `sport`, `type`, `title`, `duration_min`, `notes`, `skip` (optionnel), `model` (optionnel, id d'une séance de la bibliothèque). Les textes de `analysis` sont rendus en paragraphes (séparés par des lignes vides), le HTML est échappé.
