@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# un clic sur « Rafraîchir » peut lancer le workflow pendant le cron : un seul à la fois
+concurrency:
+  group: update-dashboard
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest

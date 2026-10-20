@@ -7,7 +7,7 @@ URL : https://mathis-ghs.github.io/dashboard/
 ## Arborescence
 
 ```
-.github/workflows/update.yml   Cron quotidien (05:00 UTC = 07:00 Paris) + workflow_dispatch
+.github/workflows/update.yml   Cron quotidien (05:00 UTC = 07:00 Paris) + workflow_dispatch (aussi lancé par le bouton #refresh)
 docs/index.html                Page unique : déchiffrement WebCrypto, rendu, plan éditable et enregistrable, coach IA
 docs/data.enc.json             Données Strava chiffrées (généré par fetch_strava.py, commit du bot)
 docs/plan.enc.json             Plan chiffré : commité depuis la page (API GitHub) ou par encrypt_plan.py
@@ -81,6 +81,7 @@ HANDOFF.md                     Notes de passation, git-ignoré
 - Avec un jeton, `fetchPlanBlob` lit le plan sur l'API GitHub plutôt que sur GitHub Pages (qui met environ une minute à se mettre à jour).
 - `docs/plan.enc.json` devient la référence : `private/plan.json` peut être en retard. Avant une édition locale : `git pull`, puis `tools/decrypt_plan.py`, puis éditer, puis `encrypt_plan.py`.
 - Le workflow fait `git pull --rebase` avant de pousser `data.enc.json`, pour ne pas échouer si le plan a été commité entre-temps.
+- Bouton `#refresh` avec un jeton : `syncStrava` déclenche le workflow `update.yml` (API `workflow_dispatch`, permission Actions en lecture et écriture), suit le run jusqu'à la fin (4 min au plus), puis `loadData` relit `data.enc.json` via l'API GitHub (`fetchRepoBlob`). Sans jeton ou en cas d'échec, simple relecture des fichiers publiés. Le workflow a un groupe `concurrency` : un seul run à la fois.
 
 ## Coach IA
 

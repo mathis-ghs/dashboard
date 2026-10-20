@@ -886,7 +886,7 @@ dialog.wide .dlg-f{flex:none}
       <legend>Enregistrement du plan (GitHub)</legend>
       <label class="field">Jeton GitHub<input type="password" id="ghToken" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
       <label class="field">Dépôt<input type="text" id="ghRepo" autocomplete="off" spellcheck="false" placeholder="propriétaire/dépôt"></label>
-      <p class="hint">Jeton « fine-grained » limité à ce seul dépôt, permission <b>Contents : Read and write</b>. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Créer un jeton</a></p>
+      <p class="hint">Jeton « fine-grained » limité à ce seul dépôt, permissions <b>Contents : Read and write</b> (enregistrer le plan) et <b>Actions : Read and write</b> (bouton Rafraîchir : relance la récupération Strava). <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Créer un jeton</a></p>
     </fieldset>
     <fieldset>
       <legend>Coach IA</legend>
@@ -1018,7 +1018,7 @@ const repoOf = () => SECRETS.repo || defaultRepo();
 
 /* ---------- GitHub : lecture et commit de docs/plan.enc.json ---------- */
 const PLAN_PATH = "docs/plan.enc.json";
-async function gh(path, opts = {}) {
+async function gh(path, {perm = "Contents", ...opts} = {}) {
   const r = await fetch(`https://api.github.com/repos/${repoOf()}${path}`, {
     ...opts, cache: "no-store",
     headers: {Authorization: `Bearer ${SECRETS.gh}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...opts.headers}
@@ -1027,19 +1027,40 @@ async function gh(path, opts = {}) {
     let m = ""; try { m = (await r.json()).message; } catch {}
     /* jeton valide mais sans droit d'écriture sur ce dépôt (cas le plus fréquent avec un jeton « fine-grained ») */
     if (r.status === 403 && /not accessible by (personal access|integration)/i.test(m))
-      throw new Error(`le jeton GitHub ne peut pas écrire dans ${repoOf()}. Sur GitHub, modifie le jeton : dépôt ${repoOf()} sélectionné, permission Contents en « Read and write ».`);
+      throw new Error(`le jeton GitHub ne peut pas écrire dans ${repoOf()}. Sur GitHub, modifie le jeton : dépôt ${repoOf()} sélectionné, permission ${perm} en « Read and write ».`);
     if (r.status === 401) throw new Error("jeton GitHub refusé ou expiré. Crée-en un nouveau et enregistre-le dans les réglages.");
     throw new Error(`GitHub ${r.status}${m ? ` (${m})` : ""}`);
   }
   return r;
 }
-/* avec un jeton, le plan est lu sur GitHub : la copie GitHub Pages met ~1 min à se mettre à jour */
-async function fetchPlanBlob() {
+/* avec un jeton, les fichiers sont lus sur GitHub : la copie GitHub Pages met ~1 min à se mettre à jour */
+async function fetchRepoBlob(name) {
   if (SECRETS.gh && repoOf()) {
-    try { const j = await (await gh(`/contents/${PLAN_PATH}`)).json(); return JSON.parse(atob(j.content.replace(/\s/g, ""))); }
-    catch (e) { console.warn("plan via GitHub indisponible :", e.message); }
+    try { const j = await (await gh(`/contents/docs/${name}`)).json(); return JSON.parse(atob(j.content.replace(/\s/g, ""))); }
+    catch (e) { console.warn(`${name} via GitHub indisponible :`, e.message); }
   }
-  return fetchBlob("plan.enc.json").catch(() => null);
+  return fetchBlob(name);
+}
+const fetchPlanBlob = () => fetchRepoBlob("plan.enc.json").catch(() => null);
+
+/* ---------- GitHub Actions : relancer la récupération Strava (workflow update.yml) ---------- */
+const WORKFLOW = "update.yml";
+async function syncStrava(onStep) {
+  const t0 = Date.now();
+  await gh(`/actions/workflows/${WORKFLOW}/dispatches`, {perm: "Actions", method: "POST", body: JSON.stringify({ref: "main"})});
+  onStep?.("Récupération Strava en cours…");
+  /* le run n'apparaît qu'après quelques secondes ; on suit le plus récent créé depuis le clic */
+  let run = null;
+  while (Date.now() - t0 < 4 * 60 * 1000) {
+    await new Promise(r => setTimeout(r, 5000));
+    const j = await (await gh(`/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=5`)).json();
+    run = j.workflow_runs.find(r => new Date(r.created_at) >= t0 - 30000) || run;
+    if (run?.status === "completed") {
+      if (run.conclusion !== "success") throw new Error(`le workflow a échoué (${run.conclusion}), voir l'onglet Actions sur GitHub`);
+      return;
+    }
+  }
+  throw new Error("le workflow n'a pas fini dans les 4 minutes, réessaie plus tard");
 }
 
 function normalizePlan(p) {
@@ -1050,7 +1071,7 @@ function normalizePlan(p) {
 
 async function loadData() {
   const wasClean = PLAN && PLAN_FILE && !isDraft();
-  const [d, p] = await Promise.all([fetchBlob("data.enc.json"), fetchPlanBlob(), loadLib().catch(e => console.warn("bibliothèque indisponible :", e.message))]);
+  const [d, p] = await Promise.all([fetchRepoBlob("data.enc.json"), fetchPlanBlob(), loadLib().catch(e => console.warn("bibliothèque indisponible :", e.message))]);
   DATA = await decrypt(d, PASS);
   PLAN_FILE = normalizePlan(p ? await decrypt(p, PASS) : {});
   if (!PLAN) { const dr = loadDraft(); PLAN = dr ? normalizePlan(dr) : structuredClone(PLAN_FILE); }
@@ -2017,6 +2038,11 @@ async function refresh(manual) {
   btn.disabled = true; btn.querySelector("svg").classList.add("spin"); document.body.classList.add("refreshing");
   const before = DATA?.generated;
   try {
+    /* clic avec un jeton GitHub : relancer d'abord la récupération Strava côté GitHub Actions */
+    if (manual && SECRETS.gh && repoOf()) {
+      try { await syncStrava(toast); }
+      catch (err) { toast("Synchronisation Strava impossible : " + err.message); await new Promise(r => setTimeout(r, 3000)); }
+    }
     await loadData(); renderAll();
     if (manual) toast(DATA.generated !== before ? "Nouvelles données chargées" : "Données déjà à jour");
   } catch (err) {
