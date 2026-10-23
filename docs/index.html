@@ -283,7 +283,13 @@ h3{margin:0}
 /* ---------- cartes KPI en dégradé ---------- */
 .kpis4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5)}
 .kpi{position:relative;overflow:hidden;border-radius:var(--r);padding:18px 20px 14px;min-width:0;box-shadow:var(--kpi-sh);transition:transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast)}
-@media (hover:hover){.kpi:hover{transform:translateY(-2px) scale(1.01);box-shadow:var(--kpi-sh),0 24px 48px rgba(22,24,39,.12)}}
+/* carte bouton : ouvre la feuille de détail ; enfoncement immédiat à l'appui */
+button.kpi{display:block;width:100%;border:0;margin:0;text-align:left;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kpi > span{display:block}
+.kpi .go{display:inline-block;margin-left:3px;font-size:1.25em;line-height:1;opacity:.75;transition:transform var(--dur-fast) var(--ease)}
+.kpi:active{transform:scale(.97);transition:transform 100ms ease-out}
+.kpi:focus-visible{border-radius:var(--r)}
+@media (hover:hover){.kpi:hover{transform:translateY(-2px) scale(1.01);box-shadow:var(--kpi-sh),0 24px 48px rgba(22,24,39,.12)}.kpi:hover .go{transform:translateX(2px)}}
 .kpi::before{content:"";position:absolute;right:-30px;top:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.14)}
 .kpi .l{font-size:13px;font-weight:650;display:flex;justify-content:space-between;gap:8px;position:relative}
 .kpi .l small{font-weight:550}
@@ -571,6 +577,40 @@ dialog.wide .dlg-f{flex:none}
 .lib-add .btn{height:38px}
 .msg.tool{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);padding:0 4px;background:none}
 .msg.tool .ico{width:14px;height:14px}
+
+/* ---------- feuille de détail des KPI ----------
+   le dialogue couvre l'écran ; voile et panneau sont pilotés image par image par un ressort (kpiFrame) */
+html.sheet-open{overflow:hidden}
+dialog.sheet{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden;color:var(--fg)}
+dialog.sheet,dialog.sheet[open]{opacity:1;transform:none;transition:none}
+dialog.sheet[open]::backdrop{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;transition:none}
+.sheet-scrim{position:absolute;inset:0;background:rgba(11,12,19,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0}
+.sheet-panel{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(760px,calc(100vw - 48px));max-height:calc(100dvh - 48px);
+  display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.08),0 30px 80px rgba(0,0,0,.28);will-change:transform,opacity}
+.sheet-grab{display:none}
+/* colonne flexible : une grille écraserait la hauteur du sélecteur défilant (.seg.scroll) */
+.sheet-b{max-height:none;flex:1 1 auto;min-height:0;gap:var(--sp-4);display:flex;flex-direction:column}
+.sheet-b > *{flex:none}
+.sheet-b > .seg{align-self:flex-start}
+.kpi-sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
+.sheet-h .eyebrow{margin-bottom:2px;display:flex;align-items:center}
+.sheet-h h3{font-size:var(--fs-h2);letter-spacing:var(--track-h)}
+.kpi-hero{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;justify-content:space-between}
+.kpi-hero .v{font-family:var(--font-d);font-size:clamp(36px,1.6vw + 28px,52px);font-weight:700;line-height:1;letter-spacing:var(--track-hero);font-variant-numeric:tabular-nums}
+.kpi-hero .d{font-size:14px;color:var(--mut);margin-top:6px}
+.kpi-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+#chartKpi{transition:opacity var(--dur-fast)}
+@media (max-width:640px){
+  /* feuille du bas : glissée vers le bas pour fermer */
+  .sheet-panel{left:0;right:0;top:auto;bottom:0;translate:none;width:100%;max-height:calc(100dvh - 24px - env(safe-area-inset-top));
+    border-radius:var(--r-lg) var(--r-lg) 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom)}
+  .sheet-grab{display:block;width:36px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 0;flex:none}
+  .sheet-grab,.sheet-h{touch-action:none;cursor:grab}
+  .sheet-h{padding-top:6px}
+  .sheet-b{padding:var(--sp-4)}
+}
+@media (prefers-reduced-transparency:reduce){.sheet-scrim{background:rgba(11,12,19,.72);-webkit-backdrop-filter:none;backdrop-filter:none}}
 
 /* ---------- toast ---------- */
 #toast{
@@ -990,6 +1030,40 @@ dialog.wide .dlg-f{flex:none}
   </div>
   <div class="dlg-b" id="libBody"></div>
   <div class="dlg-f" id="libFoot"></div>
+</dialog>
+
+<dialog id="kpiDlg" class="sheet" aria-labelledby="kpiTitle">
+  <div class="sheet-scrim" id="kpiScrim"></div>
+  <div class="sheet-panel" id="kpiPanel">
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <div class="dlg-h sheet-h">
+      <div style="min-width:0;flex:1"><div class="eyebrow" id="kpiKicker"></div><h3 id="kpiTitle"></h3></div>
+      <button class="btn ghost icon" type="button" id="kpiClose" aria-label="Fermer"><svg class="ico"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dlg-b sheet-b">
+      <div class="seg scroll" id="kpiSeg" role="group" aria-label="Indicateur">
+        <button type="button" data-k="ctl">Forme</button>
+        <button type="button" data-k="atl">Fatigue</button>
+        <button type="button" data-k="tsb">Fraîcheur</button>
+        <button type="button" data-k="vol">Volume</button>
+      </div>
+      <div class="kpi-hero">
+        <div><div class="v" id="kpiVal"></div><div class="d" id="kpiDelta"></div></div>
+        <div class="seg" id="kpiRange" role="group" aria-label="Période">
+          <button type="button" data-range="42">6 sem.</button>
+          <button type="button" data-range="90">3 mois</button>
+          <button type="button" data-range="180">6 mois</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <svg id="chartKpi" class="chart" role="img"></svg>
+        <div class="tip" id="tipKpi" hidden></div>
+      </div>
+      <div class="legend" id="legendKpi"></div>
+      <div class="kpi-stats" id="kpiStats"></div>
+      <p class="hint" id="kpiHelp"></p>
+    </div>
+  </div>
 </dialog>
 
 <div id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAct" hidden></button></div>
@@ -1453,7 +1527,7 @@ function renderKpis() {
   const ago = D[Math.max(0, D.length - 8)];
   const st = tsbState(s.tsb);
   $("#tsbPill").innerHTML = `<span class="pill ${st.cls}"><i class="dot"></i>${st.lbl}</span>`;
-  const delta = (v, old) => { const d = v - old; return `<div class="d">${Math.abs(d) < 0.05 ? "stable" : signed(d)} sur 7 j</div>`; };
+  const delta = (v, old) => { const d = v - old; return `<span class="d">${Math.abs(d) < 0.05 ? "stable" : signed(d)} sur 7 j</span>`; };
   /* courbe lissée sur 6 semaines, couleur du texte de la carte (ligne + aire translucide) */
   const spark = vals => {
     const W = 200, H = 38, lo = Math.min(...vals), hi = Math.max(...vals), k = hi - lo || 1;
@@ -1465,12 +1539,14 @@ function renderKpis() {
   const last42 = D.slice(-42);
   const curMon = mondayOf(todayISO());
   const wk = Array.from({length: 12}, (_, i) => WEEKS.get(addDays(curMon, (i - 11) * 7))?.h || 0);
-  const card = (g, label, sub, v, d, sp) => `<div class="kpi" style="background:var(${g});color:var(${g}-ink)"><div class="l"><span>${label}</span><small>${sub}</small></div><div class="v">${v}</div>${d}${sp}</div>`;
+  /* chaque carte est un bouton qui ouvre la feuille de détail (openKpi) */
+  const card = (k, g, label, sub, v, d, sp) => `<button type="button" class="kpi" data-kpi="${k}" aria-haspopup="dialog" aria-label="${label} ${v} : voir le graphique" style="background:var(${g});color:var(${g}-ink)"><span class="l"><span>${label}<span class="go" aria-hidden="true">›</span></span><small>${sub}</small></span><span class="v">${v}</span>${d}${sp}</button>`;
   $("#kpiCards").innerHTML =
-    card("--g1", "Forme", "CTL 42 j", fr1(s.ctl), delta(s.ctl, ago.ctl), spark(last42.map(x => x.ctl))) +
-    card("--g2", "Fatigue", "ATL 7 j", fr1(s.atl), delta(s.atl, ago.atl), spark(last42.map(x => x.atl))) +
-    card("--g3", "Fraîcheur", st.lbl, signed(s.tsb), delta(s.tsb, ago.tsb), spark(last42.map(x => x.tsb))) +
-    card("--g4", "Volume", "7 jours", `${fr1(s.h_7d)} h`, `<div class="d">${s.n_7d ?? "?"} sorties · ${Math.round(s.km_7d).toLocaleString("fr-FR")} km</div>`, spark(wk));
+    card("ctl", "--g1", "Forme", "CTL 42 j", fr1(s.ctl), delta(s.ctl, ago.ctl), spark(last42.map(x => x.ctl))) +
+    card("atl", "--g2", "Fatigue", "ATL 7 j", fr1(s.atl), delta(s.atl, ago.atl), spark(last42.map(x => x.atl))) +
+    card("tsb", "--g3", "Fraîcheur", st.lbl, signed(s.tsb), delta(s.tsb, ago.tsb), spark(last42.map(x => x.tsb))) +
+    card("vol", "--g4", "Volume", "7 jours", `${fr1(s.h_7d)} h`, `<span class="d">${s.n_7d ?? "?"} sorties · ${Math.round(s.km_7d).toLocaleString("fr-FR")} km</span>`, spark(wk));
+  if ($("#kpiDlg").open) renderKpiSheet();
 
   /* jauge TSB : -40 → +25 */
   const lo = -40, hi = 25, pos = v => (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * 100;
@@ -1662,6 +1738,254 @@ function renderWeeksChart() {
 function renderCharts() {
   if ($("#tab-apercu").hidden) return;
   renderFormChart(); renderWeeksChart(); renderHealthChart();
+}
+
+/* ---------- détail d'un KPI : feuille avec graphe, période et statistiques ---------- */
+const KPI_DEF = {
+  ctl: {t: "Forme", k: "CTL · moyenne 42 jours", g: "--g1", c: "var(--ctl)",
+    help: "Charge moyenne des 42 derniers jours : monte lentement quand l'entraînement est régulier. Proxy calculé sur le Relative Effort Strava, pas un TSS."},
+  atl: {t: "Fatigue", k: "ATL · moyenne 7 jours", g: "--g2", c: "var(--atl)",
+    help: "Charge moyenne des 7 derniers jours : réagit vite à chaque grosse semaine et redescend vite au repos."},
+  tsb: {t: "Fraîcheur", k: "TSB = CTL − ATL", g: "--g3", c: "var(--tsb)",
+    help: "Négatif quand on charge, positif quand on récupère. Bandes : surcharge sous −30, charge de −30 à −10, frais au-dessus de +5. Seuils indicatifs."},
+  vol: {t: "Volume", k: "Heures par semaine et par sport", g: "--g4", c: "var(--acc)",
+    help: "Heures de mouvement par semaine (lundi à dimanche), empilées par sport. Le trait marque la cible de la semaine dans le plan."},
+};
+const RANGE_LBL = {42: "6 semaines", 90: "3 mois", 180: "6 mois"};
+let KPI = "ctl";
+
+function renderKpiSheet() {
+  const def = KPI_DEF[KPI], s = DATA.summary, D = DATA.daily, ago = D[Math.max(0, D.length - 8)];
+  $("#kpiKicker").innerHTML = `<i class="kpi-sw" style="background:var(${def.g})"></i>${esc(def.k)}`;
+  $("#kpiTitle").textContent = def.t;
+  $$("#kpiSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === KPI));
+  $$("#kpiRange button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.range === RANGE));
+  if (KPI === "vol") {
+    $("#kpiVal").textContent = `${fr1(s.h_7d)} h`;
+    $("#kpiDelta").textContent = `7 derniers jours · ${s.n_7d ?? "?"} sorties · ${Math.round(s.km_7d).toLocaleString("fr-FR")} km`;
+  } else {
+    const fmt = KPI === "tsb" ? signed : fr1, d = s[KPI] - ago[KPI];
+    $("#kpiVal").textContent = fmt(s[KPI]);
+    $("#kpiDelta").textContent = `${Math.abs(d) < 0.05 ? "stable" : signed(d)} sur 7 jours` + (KPI === "tsb" ? ` · ${tsbState(s.tsb).lbl}` : "");
+  }
+  $("#kpiHelp").textContent = def.help;
+  renderKpiChart();
+}
+
+function renderKpiChart() {
+  const svg = $("#chartKpi"), wrap = svg.parentElement, tip = $("#tipKpi");
+  const W = wrap.clientWidth; if (!W || !DATA) return;
+  tip.hidden = true;
+  const tile = (l, v, sub) => `<div class="rec-t"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  const H = W < 500 ? 220 : 280;
+  if (KPI === "vol") {
+    const curMon = mondayOf(todayISO()), nw = Math.round(RANGE / 7);
+    const weeks = Array.from({length: nw}, (_, i) => addDays(curMon, (i - nw + 1) * 7)).map(m => {
+      const w = WEEKS.get(m) || {bike: 0, run: 0, other: 0, h: 0, km: 0, re: 0, n: 0};
+      return {m, ...w, target: (PLAN.weeks || []).find(p => p.start === m)?.target_h ?? null};
+    });
+    const P = {l: 34, r: 8, t: 18, b: 24}, ih = H - P.t - P.b, iw = W - P.l - P.r;
+    const tk = niceTicks(0, Math.max(1, ...weeks.map(w => Math.max(w.h, w.target || 0))), 4);
+    const y = v => P.t + ih - v / tk.at(-1) * ih;
+    const slot = iw / nw, bw = Math.min(28, slot * .64), every = Math.ceil(nw / Math.max(1, Math.floor(iw / 56)));
+    const topPath = (x, yy, w, h, r) => { r = Math.min(r, h, w / 2); return `M${x},${yy + h}V${yy + r}Q${x},${yy} ${x + r},${yy}H${x + w - r}Q${x + w},${yy} ${x + w},${yy + r}V${yy + h}Z`; };
+    let g = "";
+    tk.forEach(v => { g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end">${v} h</text>`; });
+    weeks.forEach((w, i) => {
+      const cx = P.l + slot * (i + .5), x0 = cx - bw / 2, parts = ["bike", "run", "other"].filter(k => w[k] > 0);
+      let acc = 0, segs = "";
+      parts.forEach((k, j) => {
+        const h0 = y(acc), h1 = y(acc + w[k]); acc += w[k];
+        const hh = Math.max(0, h0 - h1 - (j ? 2 : 0));
+        segs += j === parts.length - 1 ? `<path class="seg-r" d="${topPath(x0, h1, bw, hh, 4)}" fill="var(--${k})"/>` : `<rect class="seg-r" x="${x0}" y="${h1}" width="${bw}" height="${hh}" fill="var(--${k})"/>`;
+      });
+      const isCur = w.m === curMon;
+      const target = w.target != null ? `<line x1="${x0 - 3}" x2="${x0 + bw + 3}" y1="${y(w.target)}" y2="${y(w.target)}" stroke="var(--fg)" stroke-width="2" stroke-linecap="round"/>` : "";
+      const xl = (nw - 1 - i) % every === 0 ? `<text x="${cx}" y="${H - 6}" text-anchor="middle" ${isCur ? 'style="fill:var(--fg);font-weight:650"' : ""}>${isCur ? "cette sem." : fmtShort(w.m)}</text>` : "";
+      g += `<g class="bar-g" data-i="${i}">${segs}${target}${xl}<rect class="bar-hit" x="${P.l + slot * i}" y="${P.t - 10}" width="${slot}" height="${ih + 10}" tabindex="0" aria-label="Semaine du ${esc(fmtDM(w.m))} : ${fr1(w.h)} h"/></g>`;
+    });
+    g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mut)" stroke-opacity=".5"/>`;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H); svg.setAttribute("aria-label", "Heures par semaine et par sport");
+    svg.innerHTML = g;
+    const show = el => {
+      const w = weeks[+el.closest(".bar-g").dataset.i], i = weeks.indexOf(w), r = svg.getBoundingClientRect();
+      tip.innerHTML = `<div class="h">Semaine du ${esc(fmtDM(w.m))}</div><div class="r"><span>Total</span><b>${fr1(w.h)} h</b></div>` +
+        ["bike", "run", "other"].filter(k => w[k] > 0).map(k => tipRow(`var(--${k})`, SPORT_LABEL[k], `${fr1(w[k])} h`, false)).join("") +
+        (w.target != null ? tipRow("var(--fg)", "Cible", `${fr1(w.target)} h`) : "") +
+        `<div class="muted" style="margin-top:4px;font-size:11px">${w.n} sorties · ${Math.round(w.km)} km · RE ${Math.round(w.re)}</div>`;
+      placeTip(tip, wrap, (P.l + slot * (i + .5)) * r.width / W, y(Math.max(w.h, w.target || 0)) * r.height / H + 30);
+    };
+    svg.querySelectorAll(".bar-hit").forEach(el => {
+      el.addEventListener("pointerenter", () => show(el)); el.addEventListener("pointerdown", () => show(el)); el.addEventListener("focus", () => show(el));
+      el.addEventListener("pointerleave", () => tip.hidden = true); el.addEventListener("blur", () => tip.hidden = true);
+    });
+    $("#legendKpi").innerHTML = ["bike", "run", "other"].map(k => `<span><i class="k-box" style="background:var(--${k})"></i>${SPORT_LABEL[k]}</span>`).join("") +
+      `<span><i class="k-line" style="background:var(--fg)"></i>Cible du plan</span>`;
+    const tot = weeks.reduce((a, w) => a + w.h, 0), withT = weeks.filter(w => w.target != null && w.m !== curMon);
+    $("#kpiStats").innerHTML = tile("Total", `${fr1(tot)} h`, RANGE_LBL[RANGE]) + tile("Moyenne", `${fr1(tot / nw)} h`, "par semaine") +
+      tile("Distance", `${Math.round(weeks.reduce((a, w) => a + w.km, 0)).toLocaleString("fr-FR")} km`, `${weeks.reduce((a, w) => a + w.n, 0)} sorties`) +
+      (withT.length ? tile("Cible atteinte", `${withT.filter(w => w.h >= w.target * .9).length} / ${withT.length}`, "semaines terminées, à 90 %") : "");
+    return;
+  }
+
+  const def = KPI_DEF[KPI], key = KPI, D = DATA.daily.slice(-RANGE), n = D.length, vals = D.map(d => d[key]);
+  const fmt = key === "tsb" ? signed : fr1;
+  const P = {l: 34, r: 10, t: 12, b: 24}, ih = H - P.t - P.b, iw = W - P.l - P.r;
+  const x = i => P.l + (n > 1 ? i * iw / (n - 1) : iw / 2);
+  const lo = key === "tsb" ? Math.min(-35, ...vals) : Math.min(0, ...vals), hi = key === "tsb" ? Math.max(15, ...vals) : Math.max(10, ...vals);
+  const tk = niceTicks(lo, hi, 4), y = v => P.t + ih - (v - tk[0]) / (tk.at(-1) - tk[0]) * ih;
+  let g = "";
+  if (key === "tsb") {
+    const band = (a, b, c) => { const ya = y(Math.min(tk.at(-1), b)), yb = y(Math.max(tk[0], a)); if (yb > ya) g += `<rect x="${P.l}" width="${iw}" y="${ya}" height="${yb - ya}" fill="${c}" opacity=".09"/>`; };
+    band(-1e9, -30, "var(--bad)"); band(-30, -10, "var(--warn)"); band(5, 1e9, "var(--ok)");
+  }
+  tk.forEach(v => { g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 && key === "tsb" ? "var(--mut)" : "var(--grid)"}"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end">${key === "tsb" && v > 0 ? "+" + v : v}</text>`; });
+  let lastX = -1e9;
+  D.forEach((d, i) => {
+    const tick = RANGE <= 42 ? dateOf(d.d).getDay() === 1 : d.d.endsWith("-01");
+    if (!tick || x(i) - lastX < 56 || x(i) > W - P.r - 20) return;
+    lastX = x(i);
+    g += `<line x1="${x(i)}" x2="${x(i)}" y1="${P.t + ih}" y2="${P.t + ih + 4}" stroke="var(--mut)"/><text x="${x(i)}" y="${H - 5}" text-anchor="middle">${RANGE <= 42 ? fmtShort(d.d) : dateOf(d.d).toLocaleDateString("fr-FR", {month: "short"})}</text>`;
+  });
+  const line = smoothPath(D.map((d, i) => [x(i), y(d[key])])), base = y(Math.max(tk[0], Math.min(0, tk.at(-1))));
+  g += `<defs><linearGradient id="gKpi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${def.c}" stop-opacity=".28"/><stop offset="1" stop-color="${def.c}" stop-opacity="0"/></linearGradient></defs>`;
+  g += `<path d="${line}L${x(n - 1)},${base}L${x(0)},${base}Z" fill="url(#gKpi)"/>`;
+  g += `<path d="${line}" fill="none" stroke="${def.c}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+  g += `<circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="4" fill="${def.c}" stroke="var(--card)" stroke-width="2"/>`;
+  g += `<g id="kx" style="display:none;pointer-events:none"><line id="kxl" y1="${P.t}" y2="${P.t + ih}" stroke="var(--mut)" stroke-opacity=".7"/><circle id="kx1" r="4.5" fill="${def.c}" stroke="var(--card)" stroke-width="2"/></g>`;
+  g += `<rect class="hit" x="${P.l}" y="0" width="${iw}" height="${P.t + ih}" tabindex="0" aria-label="Explorer les valeurs jour par jour avec les flèches"/>`;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H); svg.setAttribute("aria-label", `${def.t} sur ${RANGE_LBL[RANGE]}`);
+  svg.innerHTML = g;
+
+  const kx = svg.querySelector("#kx"), hit = svg.querySelector(".hit");
+  let cur = n - 1;
+  const show = i => {
+    cur = Math.max(0, Math.min(n - 1, i)); const d = D[cur], xx = x(cur);
+    kx.style.display = "";
+    svg.querySelector("#kxl").setAttribute("x1", xx); svg.querySelector("#kxl").setAttribute("x2", xx);
+    const c = svg.querySelector("#kx1"); c.setAttribute("cx", xx); c.setAttribute("cy", y(d[key]));
+    tip.innerHTML = `<div class="h">${esc(fmtDay(d.d))}</div>` + tipRow(def.c, def.t, fmt(d[key])) +
+      `<div class="r" style="margin-top:4px"><span>Charge du jour</span><b>${d.load ? Math.round(d.load) : "—"}</b></div>`;
+    placeTip(tip, wrap, xx * svg.getBoundingClientRect().width / W, 0, true);
+  };
+  const hide = () => { kx.style.display = "none"; tip.hidden = true; };
+  const fromEvt = e => { const r = svg.getBoundingClientRect(); return Math.round(((e.clientX - r.left) * W / r.width - P.l) / (iw / Math.max(1, n - 1))); };
+  hit.addEventListener("pointermove", e => show(fromEvt(e)));
+  hit.addEventListener("pointerdown", e => show(fromEvt(e)));
+  hit.addEventListener("pointerleave", hide);
+  hit.addEventListener("focus", () => show(cur));
+  hit.addEventListener("blur", hide);
+  hit.addEventListener("keydown", e => {
+    const step = {ArrowLeft: -1, ArrowRight: 1, PageUp: -7, PageDown: 7, Home: -1e4, End: 1e4}[e.key];
+    if (step) { e.preventDefault(); show(cur + step); }
+  });
+  $("#legendKpi").innerHTML = `<span><i class="k-line" style="background:${def.c}"></i>${def.t} <b>${fmt(vals[n - 1])}</b></span>` +
+    (key === "tsb" ? `<span><i class="k-box" style="background:var(--bad);opacity:.5"></i>Surcharge</span><span><i class="k-box" style="background:var(--warn);opacity:.5"></i>Charge</span><span><i class="k-box" style="background:var(--ok);opacity:.5"></i>Frais</span>` : "");
+  const iMin = vals.indexOf(Math.min(...vals)), iMax = vals.indexOf(Math.max(...vals));
+  $("#kpiStats").innerHTML = tile("Minimum", fmt(vals[iMin]), fmtDM(D[iMin].d)) + tile("Maximum", fmt(vals[iMax]), fmtDM(D[iMax].d)) +
+    tile("Moyenne", fmt(vals.reduce((a, v) => a + v, 0) / n), `sur ${RANGE_LBL[RANGE]}`) +
+    tile("Variation", signed(vals[n - 1] - vals[0]), `depuis le ${fmtDM(D[0].d)}`);
+}
+
+/* ressort à la manière d'Apple (amortissement + réponse en secondes) : repart toujours de la valeur
+   et de la vitesse courantes, donc toute animation peut être reprise ou inversée en cours de route */
+function spring(onFrame) {
+  let x = 0, v = 0, to = 0, damp = 1, resp = .35, raf = 0, done = null, last = 0;
+  const tick = t => {
+    const dt = Math.min(.032, (t - last) / 1000); last = t;
+    const k = (2 * Math.PI / resp) ** 2, c = 4 * Math.PI * damp / resp;
+    v += (-k * (x - to) - c * v) * dt; x += v * dt;
+    if (Math.abs(v) < .002 && Math.abs(x - to) < .001) { x = to; v = 0; raf = 0; onFrame(x); const d = done; done = null; d?.(); return; }
+    onFrame(x); raf = requestAnimationFrame(tick);
+  };
+  return {
+    get x() { return x; },
+    set(nx) { cancelAnimationFrame(raf); raf = 0; done = null; x = nx; v = 0; onFrame(x); },
+    to(nt, o = {}) {
+      to = nt; damp = o.damp ?? 1; resp = o.resp ?? .35; if (o.v != null) v = o.v; done = o.done || null;
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+    },
+  };
+}
+/* au-delà d'une borne, l'élément suit de moins en moins le doigt */
+const rubberband = (over, dim, c = .55) => over * dim * c / (dim + c * Math.abs(over));
+
+/* feuille : progression p (0 fermée, 1 ouverte). Mobile : glisse depuis le bas ; bureau : grandit depuis la carte touchée */
+const KS = {open: false, mobile: false, from: null, rect: null};
+const kpiReduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+function kpiFrame(p) {
+  const panel = $("#kpiPanel"), q = Math.max(0, Math.min(1, p));
+  $("#kpiScrim").style.opacity = q;
+  if (kpiReduced()) { panel.style.transform = ""; panel.style.opacity = q; return; }
+  if (KS.mobile) {
+    const h = panel.offsetHeight;
+    panel.style.transform = `translate3d(0,${p > 1 ? -rubberband((p - 1) * h, h) : (1 - p) * h}px,0)`;
+    panel.style.opacity = "";
+    return;
+  }
+  const r = KS.rect, c = KS.from || {left: r.left, top: r.top + 24, width: r.width * .96, height: r.height};
+  const s = c.width / r.width + (1 - c.width / r.width) * q;
+  const dx = (c.left + c.width / 2 - (r.left + r.width / 2)) * (1 - q), dy = (c.top + c.height / 2 - (r.top + r.height / 2)) * (1 - q);
+  panel.style.transform = `translate3d(${dx}px,${dy}px,0) scale(${s})`;
+  panel.style.opacity = Math.min(1, q * 2.5);
+}
+const SP = spring(kpiFrame);
+function measureKpi() {
+  const panel = $("#kpiPanel");
+  KS.mobile = matchMedia("(max-width:640px)").matches;
+  panel.style.transform = "none"; KS.rect = panel.getBoundingClientRect();
+}
+function openKpi(k, from) {
+  const dlg = $("#kpiDlg");
+  KPI = k; KS.from = from?.getBoundingClientRect() || null;
+  if (!dlg.open) { dlg.showModal(); document.documentElement.classList.add("sheet-open"); }
+  renderKpiSheet(); measureKpi();
+  if (!KS.open) SP.set(0);
+  KS.open = true;
+  SP.to(1, {damp: 1, resp: .4});
+}
+/* fermeture symétrique : retour vers la carte de l'indicateur affiché, avec la vitesse du geste */
+function closeKpi(v = 0) {
+  if (!KS.open) return;
+  KS.open = false; $("#tipKpi").hidden = true;
+  KS.from = $(`#kpiCards .kpi[data-kpi="${KPI}"]`)?.getBoundingClientRect() || KS.from;
+  SP.to(0, {v, damp: 1, resp: .32, done: () => { if (!KS.open) { $("#kpiDlg").close(); document.documentElement.classList.remove("sheet-open"); } }});
+}
+function resetKpi() {
+  SP.set(0); KS.open = false;
+  if ($("#kpiDlg").open) $("#kpiDlg").close();
+  document.documentElement.classList.remove("sheet-open");
+}
+/* glisser la poignée ou l'en-tête : suivi 1:1, seuil de 10 px, projection de l'élan au lâcher */
+{
+  const panel = $("#kpiPanel");
+  let drag = null;
+  panel.addEventListener("pointerdown", e => {
+    if (!KS.mobile || kpiReduced() || !e.target.closest(".sheet-grab, .sheet-h") || e.target.closest("button")) return;
+    panel.setPointerCapture(e.pointerId);
+    drag = {id: e.pointerId, y0: e.clientY, p0: SP.x, h: panel.offsetHeight, moved: false, hist: [[e.timeStamp, e.clientY]]};
+  });
+  panel.addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientY - drag.y0) < 10) return;
+      drag.moved = true; drag.y0 = e.clientY; drag.p0 = SP.x; KS.open = true;
+    }
+    SP.set(drag.p0 - (e.clientY - drag.y0) / drag.h);
+    drag.hist.push([e.timeStamp, e.clientY]);
+    while (drag.hist.length > 2 && e.timeStamp - drag.hist[0][0] > 100) drag.hist.shift();
+  });
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (!d.moved) return;
+    const [t0, y0] = d.hist[0], [t1, y1] = d.hist.at(-1), vy = t1 > t0 ? (y1 - y0) / (t1 - t0) * 1000 : 0;
+    const projected = SP.x - vy / 1000 * .998 / (1 - .998) / d.h;
+    if (Math.abs(vy) > 700 ? vy > 0 : projected < .5) closeKpi(-vy / d.h);
+    else SP.to(1, {v: -vy / d.h, damp: .85, resp: .3});
+  };
+  panel.addEventListener("pointerup", end);
+  panel.addEventListener("pointercancel", end);
 }
 
 /* ---------- rendu : plan ---------- */
@@ -2241,6 +2565,23 @@ $("#rangeSeg").addEventListener("click", e => {
   $$("#rangeSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
   renderFormChart(); renderHealthChart();
 });
+$("#kpiCards").addEventListener("click", e => { const b = e.target.closest(".kpi"); if (b) openKpi(b.dataset.kpi, b); });
+$("#kpiClose").addEventListener("click", () => closeKpi());
+$("#kpiScrim").addEventListener("click", () => closeKpi());
+$("#kpiDlg").addEventListener("cancel", e => { e.preventDefault(); closeKpi(); });
+$("#kpiSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || b.dataset.k === KPI) return;
+  KPI = b.dataset.k; renderKpiSheet();
+});
+/* période partagée avec le graphe de charge de l'Aperçu */
+$("#kpiRange").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  RANGE = +b.dataset.range;
+  try { localStorage.setItem("range", RANGE); } catch {}
+  $$("#rangeSeg button").forEach(x => x.setAttribute("aria-pressed", +x.dataset.range === RANGE));
+  renderKpiSheet(); renderFormChart(); renderHealthChart();
+});
+addEventListener("resize", () => { if (!KS.open) return; measureKpi(); kpiFrame(SP.x); renderKpiChart(); });
 $("#healthSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   H_METRIC = b.dataset.m;
@@ -2325,7 +2666,7 @@ $("#showPass").addEventListener("click", () => {
 
 $("#lock").addEventListener("click", () => {
   PASS = null; DATA = null; PLAN_FILE = null; PLAN = null; SECRETS = {}; HEALTH = null; H_BY_DAY = new Map();
-  resetCoach(); clearLib();
+  resetCoach(); clearLib(); resetKpi();
   $("#app").hidden = true; $("#gate").hidden = false;
   $("#pass").value = ""; $("#pass").focus();
 });

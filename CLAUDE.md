@@ -67,7 +67,7 @@ HANDOFF.md                     Notes de passation, git-ignoré
 
 - Éléments d'identification : `#gate`, `#unlockForm`, `#pass`, `#app`, `#updated`, `#refresh`, `#theme`, `#settings`, `#lock`.
 - Six onglets (`showTab`, routage par hash `#apercu`, `#plan`, `#coach`, `#bibliotheque`, `#activites`, `#notes`). Sur mobile (< 640 px), la barre d'onglets passe en bas d'écran.
-  - Aperçu : `#today` (séance du jour, prochaine séance, semaine en cours avec 7 pastilles et écart au plan : prévu à date, réalisé, écart, compte des séances), `#kpis` (CTL/ATL/TSB avec variation sur 7 j, jauge TSB, volume), `#chartForm` (CTL/ATL + panneau TSB, période 6 sem./3 mois/6 mois), `#chartWeeks` (heures par semaine empilées par sport, cible du plan).
+  - Aperçu : `#today` (séance du jour, prochaine séance, semaine en cours avec 7 pastilles et écart au plan : prévu à date, réalisé, écart, compte des séances), `#kpis` (CTL/ATL/TSB avec variation sur 7 j, jauge TSB, volume), `#chartForm` (CTL/ATL + panneau TSB, période 6 sem./3 mois/6 mois), `#chartWeeks` (heures par semaine empilées par sport, cible du plan). Les cartes KPI `#kpiCards` (Forme, Fatigue, Fraîcheur, Volume) sont des boutons qui ouvrent la feuille `#kpiDlg` (voir « Mouvement »).
   - Plan : `#plan` en lecture par défaut, bouton `#editPlan` pour passer en édition (séances, objectif et cible de chaque semaine, ajout et suppression de semaines). `#draftBar` apparaît quand le brouillon local diffère du plan enregistré, avec `#savePlan` (commit GitHub), `#resetPlan`, `#exportPlan`.
   - Coach : chat `#chat`, saisie `#coachForm` (voir « Coach IA »).
   - Biblio : `#libSeg` (Vélo, Renfo, Étirements, Exercices, Programmes, Principes), `#libPhase`, `#libSearch`, liste `#lib`, fiche `#libDlg` (voir « Bibliothèque »).
@@ -122,6 +122,7 @@ HANDOFF.md                     Notes de passation, git-ignoré
 - Composants : boutons en pilule (`.btn`, `.btn.primary` en dégradé), lien secondaire `.more-link` (« › »), en-têtes d'onglet `.page-h` / `.eyebrow` / `.page-title` / `.page-sub`, grille de 12 colonnes `.ov-grid` (8 + 4).
 - Navigation : `.top` translucide (saturate(180%) blur(20px)), classe `.compact` au-delà de 24 px de défilement (logo réduit, sous-titre masqué). La variable `--scroll` alimente la parallaxe du halo de `#today` ; `--px` / `--py` celle de `.gate-glow`.
 - Mouvement : entrée décalée des enfants de `.panel` à l'affichage d'un onglet (`@keyframes rise`), apparition au défilement via `reveal()` (classes `.rv` / `.rv.in`, IntersectionObserver). `reveal()` ne masque que les blocs sous la ligne de flottaison, au changement d'onglet : un nouveau rendu crée des éléments visibles d'emblée. `prefers-reduced-motion` coupe tout.
+- Feuille de détail des KPI (`#kpiDlg`, `openKpi`, `closeKpi`, `renderKpiSheet`, `renderKpiChart`) : indicateur `#kpiSeg`, période `#kpiRange` partagée avec `RANGE` et `#rangeSeg`, graphe `#chartKpi`, statistiques `#kpiStats`. Animée par un ressort (`spring`, `SP`, `kpiFrame`) sur une progression 0 → 1 : sur bureau le panneau grandit depuis la carte touchée et y retourne à la fermeture ; sur mobile (≤ 640 px) feuille du bas, glissée par la poignée ou l'en-tête (seuil 10 px, suivi 1:1, `rubberband` au-delà du haut, élan projeté au lâcher). Mouvement réduit : simple fondu. Fermée au verrouillage (`resetKpi`).
 
 ## Format de `private/plan.json`
 
