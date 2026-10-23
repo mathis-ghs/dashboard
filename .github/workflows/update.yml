@@ -33,11 +33,26 @@ jobs:
           DASH_PASSPHRASE: ${{ secrets.DASH_PASSPHRASE }}
         run: python tools/fetch_strava.py
 
+      # accès Garmin non officiel : un échec ne doit pas bloquer la mise à jour Strava
+      - name: Fetch Garmin and write encrypted data
+        continue-on-error: true
+        env:
+          GARMIN_TOKEN_KEY: ${{ secrets.GARMIN_TOKEN_KEY }}
+          DASH_PASSPHRASE: ${{ secrets.DASH_PASSPHRASE }}
+        run: |
+          if [ -z "$GARMIN_TOKEN_KEY" ] || [ ! -f state/garmin_tokens.enc.json ]; then
+            echo "Garmin non configuré, étape ignorée."
+          else
+            python tools/fetch_garmin.py
+          fi
+
       - name: Commit encrypted data
         run: |
           git config user.name "dashboard-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add docs/data.enc.json
+          for f in docs/data.enc.json docs/garmin.enc.json state/garmin_tokens.enc.json; do
+            if [ -e "$f" ]; then git add "$f"; fi
+          done
           if git diff --cached --quiet; then
             echo "Pas de changement."
           else

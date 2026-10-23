@@ -312,6 +312,17 @@ h3{margin:0}
 .vol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .vol .v{font-size:19px;font-weight:650;line-height:1.2}
 .vol .l{font-size:12px;color:var(--mut)}
+/* récupération (Garmin) */
+.rec-adv{font-size:14px;color:var(--fg2);margin:0 0 16px;line-height:1.45}
+.rec-adv b{color:var(--fg)}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.rec-t{background:var(--soft);border-radius:var(--r-sm);padding:12px 14px;min-width:0}
+.rec-t .l{font-size:12px;color:var(--mut);font-weight:600}
+.rec-t .v{font-size:20px;font-weight:650;line-height:1.25;font-variant-numeric:tabular-nums}
+.rec-t .s{font-size:12px;color:var(--mut);overflow-wrap:anywhere}
+.seg.scroll{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg.scroll::-webkit-scrollbar{display:none}
+.seg.scroll button{flex:none}
 details.help{margin-top:14px;font-size:13px;color:var(--mut)}
 details.help summary{cursor:pointer;list-style:none;display:inline-flex;gap:6px;align-items:center}
 details.help summary::-webkit-details-marker{display:none}
@@ -728,6 +739,17 @@ dialog.wide .dlg-f{flex:none}
     <section class="panel" id="tab-apercu" role="tabpanel" data-panel="apercu">
       <div class="card today keynote" id="today"></div>
 
+      <section class="card" id="recCard" hidden>
+        <div class="card-h"><h2>Récupération</h2><span id="recPill"></span></div>
+        <p class="rec-adv" id="recAdvice"></p>
+        <div class="rec-grid" id="recTiles"></div>
+        <details class="help">
+          <summary><svg class="ico" style="width:15px;height:15px"><use href="#i-info"/></svg>Comment est calculé le feu</summary>
+          <p>Données Garmin de la nuit : VFC (statut Garmin ou sous ta plage normale), FC de repos comparée à ta moyenne des 28 jours précédents, sommeil (score &lt; 60 ou moins de 6 h) et Body Battery au réveil (&lt; 30). Vert : aucun signal ; orange : 1 ou 2 points ; rouge : 3 points ou plus.</p>
+          <p>Pas, étages, calories et stress concernent la journée d'hier (complète). Indicatif, pas un avis médical.</p>
+        </details>
+      </section>
+
       <div class="kpis4" id="kpiCards"></div>
 
       <div class="ov-grid">
@@ -770,6 +792,24 @@ dialog.wide .dlg-f{flex:none}
           <span><i class="k-box" style="background:var(--other)"></i>Autre</span>
           <span><i class="k-line" style="background:var(--fg)"></i>Cible du plan</span>
         </div>
+      </section>
+
+      <section class="card" id="healthCard" hidden>
+        <div class="card-h">
+          <h2>Récupération et charge</h2>
+          <div class="seg scroll" id="healthSeg" role="group" aria-label="Indicateur">
+            <button type="button" data-m="hrv">VFC</button>
+            <button type="button" data-m="rhr">FC repos</button>
+            <button type="button" data-m="sleep_h">Sommeil</button>
+            <button type="button" data-m="bb">Body Battery</button>
+            <button type="button" data-m="stress">Stress</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chartHealth" class="chart" role="img" aria-label="Indicateur de récupération et charge quotidienne"></svg>
+          <div class="tip" id="tipHealth" hidden></div>
+        </div>
+        <div class="legend" id="legendHealth"></div>
       </section>
     </section>
 
@@ -1071,8 +1111,10 @@ function normalizePlan(p) {
 
 async function loadData() {
   const wasClean = PLAN && PLAN_FILE && !isDraft();
-  const [d, p] = await Promise.all([fetchRepoBlob("data.enc.json"), fetchPlanBlob(), loadLib().catch(e => console.warn("bibliothèque indisponible :", e.message))]);
+  const [d, p, h] = await Promise.all([fetchRepoBlob("data.enc.json"), fetchPlanBlob(), fetchRepoBlob("garmin.enc.json").catch(() => null),
+    loadLib().catch(e => console.warn("bibliothèque indisponible :", e.message))]);
   DATA = await decrypt(d, PASS);
+  HEALTH = h ? await decrypt(h, PASS).catch(e => (console.warn("données Garmin illisibles :", e.message), null)) : null;
   PLAN_FILE = normalizePlan(p ? await decrypt(p, PASS) : {});
   if (!PLAN) { const dr = loadDraft(); PLAN = dr ? normalizePlan(dr) : structuredClone(PLAN_FILE); }
   else if (wasClean) PLAN = structuredClone(PLAN_FILE);
@@ -1092,6 +1134,178 @@ function indexData() {
     w[sportKey(a.sport)] += a.h; w.h += a.h; w.km += a.km; w.re += a.re || 0; w.n++;
     WEEKS.set(m, w);
   }
+  H_BY_DAY = new Map((HEALTH?.days || []).map(x => [x.d, x]));
+}
+
+/* ---------- santé Garmin : la nuit du jour J (sommeil, VFC, FC repos) précède la séance du jour J ---------- */
+let HEALTH = null, H_BY_DAY = new Map(), H_METRIC = "hrv";
+const HM = {
+  hrv: {l: "VFC", u: "ms", get: h => h.hrv},
+  rhr: {l: "FC repos", u: "bpm", get: h => h.rhr},
+  sleep_h: {l: "Sommeil", u: "h", get: h => h.sleep_h},
+  bb: {l: "Body Battery au réveil", u: "", get: h => h.bb_wake ?? h.bb_max},
+  stress: {l: "Stress moyen", u: "", get: h => h.stress}
+};
+const HRV_FR = {BALANCED: "équilibrée", UNBALANCED: "déséquilibrée", LOW: "basse", POOR: "faible"};
+/* moyenne des n jours précédant d (exclu), au moins 7 valeurs */
+function hBase(get, d, n = 28) {
+  const v = [];
+  for (let i = 1; i <= n; i++) { const h = H_BY_DAY.get(addDays(d, -i)); const x = h && get(h); if (x != null) v.push(x); }
+  return v.length >= 7 ? v.reduce((a, b) => a + b, 0) / v.length : null;
+}
+/* dernier jour (≤ d) avec des données de nuit */
+function hNight(d) {
+  for (let i = 0; i < 7; i++) { const k = addDays(d, -i), h = H_BY_DAY.get(k); if (h && (h.sleep_h || h.hrv || h.rhr)) return k; }
+  return null;
+}
+const hLatest = (key, d, n = 60) => { for (let i = 0; i < n; i++) { const h = H_BY_DAY.get(addDays(d, -i)); if (h?.[key] != null) return {d: addDays(d, -i), v: h[key], h}; } return null; };
+function recoveryOf(d) {
+  const h = H_BY_DAY.get(d); if (!h) return null;
+  const why = []; let pts = 0;
+  const st = (h.hrv_status || "").toUpperCase();
+  if (st === "LOW" || st === "POOR") { pts += 2; why.push(`VFC ${HRV_FR[st]}`); }
+  else if (st === "UNBALANCED") { pts += 1; why.push("VFC déséquilibrée"); }
+  else if (!st && h.hrv && h.hrv_lo && h.hrv < h.hrv_lo) { pts += 2; why.push("VFC sous ta plage normale"); }
+  const rb = hBase(x => x.rhr, d);
+  if (h.rhr && rb) {
+    const dr = h.rhr - rb;
+    if (dr >= 5) { pts += 2; why.push(`FC repos +${Math.round(dr)} bpm`); } else if (dr >= 3) { pts += 1; why.push(`FC repos +${Math.round(dr)} bpm`); }
+  }
+  if (h.sleep_score != null ? h.sleep_score < 60 : h.sleep_h != null && h.sleep_h < 6) { pts += 1; why.push("sommeil court ou peu réparateur"); }
+  if (h.bb_wake != null && h.bb_wake < 30) { pts += 1; why.push("Body Battery basse au réveil"); }
+  const level = pts >= 3 ? "bad" : pts ? "warn" : "ok";
+  return {level, pts, why, lbl: {ok: "Bien récupéré", warn: "À surveiller", bad: "Récup insuffisante"}[level]};
+}
+const isHard = s => {
+  const t = s.model && LIB?.byId[s.model];
+  return /seuil|vo2|pma|z[4-6]|interv|fraction|sprint|test|tempo|sweet|côte|cote/i.test(`${t?.intensite || ""} ${s.type || ""} ${s.title || ""}`);
+};
+
+function renderRecovery() {
+  const card = $("#recCard");
+  const today = todayISO(), d = HEALTH && hNight(today);
+  card.hidden = !d;
+  if (!d) return;
+  const h = H_BY_DAY.get(d), y = H_BY_DAY.get(addDays(d, -1)) || {}, r = recoveryOf(d);
+  $("#recPill").innerHTML = `<span class="pill ${r.level}"><i class="dot"></i>${r.lbl}</span>`;
+
+  const sess = allSessions().map(x => x.s).filter(s => s.date === today && s.duration_min && !s.skip);
+  const hard = sess.filter(isHard);
+  const why = r.why.length ? ` (${esc(r.why.join(", "))})` : "";
+  let adv;
+  if (r.level === "bad") adv = hard.length ? `<b>Séance intense prévue (${esc(hard[0].title)}) avec une récupération insuffisante</b>${why} : passe-la en endurance Z1-Z2, raccourcis-la ou décale-la.`
+    : `<b>Récupération insuffisante</b>${why} : reste en endurance facile ou repos aujourd'hui.`;
+  else if (r.level === "warn") adv = hard.length ? `<b>Signaux mitigés</b>${why} : fais l'échauffement et juge aux sensations avant les efforts de « ${esc(hard[0].title)} ».`
+    : `<b>Signaux mitigés</b>${why} : rien d'alarmant, surveille la tendance demain.`;
+  else adv = sess.length ? `<b>Feu vert</b> pour ${esc(sess.map(s => s.title).join(" et "))}.` : "<b>Bonne récupération.</b>";
+  if (d !== today) adv += ` <span class="muted">Dernière nuit synchronisée : ${esc(fmtDay(d))}.</span>`;
+  $("#recAdvice").innerHTML = adv;
+
+  const vs = (v, base, u, nd = 0) => base == null || v == null ? "" : `${v - base >= 0 ? "+" : "−"}${Math.abs(v - base).toFixed(nd).replace(".", ",")}${u ? " " + u : ""} vs 28 j`;
+  const n0 = v => Math.round(v).toLocaleString("fr-FR");
+  const tile = (l, v, s) => v == null ? "" : `<div class="rec-t"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s || "&nbsp;"}</div></div>`;
+  const vo2 = hLatest("vo2", today) || hLatest("vo2_bike", today), wt = hLatest("weight", today, 30);
+  $("#recTiles").innerHTML = [
+    tile("Sommeil", h.sleep_h != null ? fmtDur(h.sleep_h * 60) : null,
+      [h.sleep_score != null && `score ${h.sleep_score}`, h.deep_h != null && `profond ${fmtDur(h.deep_h * 60)}`, h.rem_h != null && `REM ${fmtDur(h.rem_h * 60)}`].filter(Boolean).map(t => t.replace(/ /g, "\u00a0")).join(" · ")),
+    tile("VFC nuit", h.hrv != null ? `${h.hrv} ms` : null,
+      [h.hrv_status && HRV_FR[h.hrv_status.toUpperCase()], h.hrv_lo && h.hrv_hi && `normale ${h.hrv_lo}-${h.hrv_hi}`].filter(Boolean).join(" · ")),
+    tile("FC repos", h.rhr != null ? `${h.rhr} bpm` : null, vs(h.rhr, hBase(x => x.rhr, d), "bpm")),
+    tile("Body Battery", h.bb_wake ?? h.bb_max ?? null, [h.bb_wake != null && "au réveil", h.bb_max != null && `max ${h.bb_max}`, h.bb_min != null && `min ${h.bb_min}`].filter(Boolean).join(" · ")),
+    tile("SpO2", h.spo2 != null ? `${h.spo2} %` : null, h.spo2_min != null ? `min ${h.spo2_min} %` : ""),
+    tile("Stress hier", y.stress ?? null, vs(y.stress, hBase(x => x.stress, addDays(d, -1)), "")),
+    tile("Pas hier", y.steps != null ? n0(y.steps) : null, y.floors != null ? `${y.floors} étage${y.floors > 1 ? "s" : ""}` : ""),
+    tile("Calories hier", y.kcal != null ? `${n0(y.kcal)} kcal` : null, y.kcal_act != null ? `dont ${n0(y.kcal_act)} actives` : ""),
+    tile("VO2max", vo2 ? fr1(vo2.v) : null, [vo2?.h.vo2_bike != null && vo2.h.vo2 != null && `vélo ${fr1(vo2.h.vo2_bike)}`, vo2 && fmtDM(vo2.d)].filter(Boolean).join(" · ")),
+    tile("Poids", wt ? `${fr1(wt.v)} kg` : null, [wt?.h.fat != null && `${fr1(wt.h.fat)} % MG`, wt && fmtDM(wt.d)].filter(Boolean).join(" · "))
+  ].join("");
+}
+
+function renderHealthChart() {
+  const card = $("#healthCard");
+  card.hidden = !HEALTH?.days?.length;
+  if (card.hidden) return;
+  const svg = $("#chartHealth"), wrap = svg.parentElement, tip = $("#tipHealth");
+  const W = wrap.clientWidth; if (!W) return;
+  const M = HM[H_METRIC];
+  $$("#healthSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === H_METRIC));
+  const D = DATA.daily.slice(-RANGE).map(x => { const h = H_BY_DAY.get(x.d); return {d: x.d, load: x.load, h, v: h ? M.get(h) ?? null : null}; });
+  const n = D.length;
+  /* moyenne glissante 7 j sur les valeurs présentes */
+  D.forEach((x, i) => { const w = D.slice(Math.max(0, i - 6), i + 1).map(y => y.v).filter(v => v != null); x.m = w.length >= 3 ? w.reduce((a, b) => a + b, 0) / w.length : null; });
+  const vals = D.map(x => x.v).filter(v => v != null);
+  const P = {l: 34, r: 8, t: 8}, H1 = W < 500 ? 150 : 180, GAP = 26, H2 = W < 500 ? 60 : 72, XB = 22;
+  const H = P.t + H1 + GAP + H2 + XB, iw = W - P.l - P.r, top2 = P.t + H1 + GAP;
+  const x = i => P.l + (n > 1 ? i * iw / (n - 1) : iw / 2);
+  const last = [...D].reverse().find(z => z.h?.hrv_lo);
+  const band = H_METRIC === "hrv" && last ? [last.h.hrv_lo, last.h.hrv_hi] : null;
+  const lo = Math.min(...vals, ...(band || [])), hi = Math.max(...vals, ...(band || []));
+  const tk = vals.length ? niceTicks(Math.max(0, lo - (hi - lo) * .15), hi + (hi - lo) * .15 || hi + 1, 4) : [0, 1];
+  const y1 = v => P.t + H1 - (v - tk[0]) / (tk.at(-1) - tk[0]) * H1;
+  const lmax = Math.max(10, ...D.map(z => z.load));
+  const y2 = v => top2 + H2 - v / lmax * H2;
+
+  let g = "";
+  tk.forEach(v => { g += `<line x1="${P.l}" x2="${W - P.r}" y1="${y1(v)}" y2="${y1(v)}" stroke="var(--grid)"/><text x="${P.l - 6}" y="${y1(v) + 4}" text-anchor="end">${v}</text>`; });
+  if (band) g += `<rect x="${P.l}" width="${iw}" y="${y1(band[1])}" height="${y1(band[0]) - y1(band[1])}" fill="var(--ok)" opacity=".1"/>`;
+  g += `<text x="${P.l}" y="${top2 - 9}" style="font-weight:600">Charge du jour (RE)</text>`;
+  g += `<line x1="${P.l}" x2="${W - P.r}" y1="${top2 + H2}" y2="${top2 + H2}" stroke="var(--mut)" stroke-opacity=".5"/>`;
+  const bw = Math.max(1.5, Math.min(8, iw / n * .6));
+  D.forEach((z, i) => { if (z.load > 0) g += `<rect x="${x(i) - bw / 2}" y="${y2(z.load)}" width="${bw}" height="${top2 + H2 - y2(z.load)}" rx="${Math.min(2, bw / 2)}" fill="var(--atl)" opacity=".55"/>`; });
+  const minGap = 56; let lastX = -1e9;
+  D.forEach((z, i) => {
+    const tick = RANGE <= 42 ? dateOf(z.d).getDay() === 1 : z.d.endsWith("-01");
+    if (!tick || x(i) - lastX < minGap || x(i) > W - P.r - 20) return;
+    lastX = x(i);
+    const lbl = RANGE <= 42 ? fmtShort(z.d) : dateOf(z.d).toLocaleDateString("fr-FR", {month: "short"});
+    g += `<line x1="${x(i)}" x2="${x(i)}" y1="${top2 + H2}" y2="${top2 + H2 + 4}" stroke="var(--mut)"/><text x="${x(i)}" y="${H - 5}" text-anchor="middle">${lbl}</text>`;
+  });
+  D.forEach((z, i) => { if (z.v != null) g += `<circle cx="${x(i)}" cy="${y1(z.v)}" r="${n > 100 ? 2 : 2.6}" fill="var(--ctl)" opacity=".45"/>`; });
+  /* courbe de moyenne, coupée là où il manque des données */
+  let seg = [];
+  const flush = () => { if (seg.length > 1) g += `<path d="${smoothPath(seg)}" fill="none" stroke="var(--ctl)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`; seg = []; };
+  D.forEach((z, i) => { if (z.m == null) flush(); else seg.push([x(i), y1(z.m)]); });
+  flush();
+  g += `<g id="hx" style="display:none;pointer-events:none"><line id="hxl" y1="${P.t}" y2="${top2 + H2}" stroke="var(--mut)" stroke-opacity=".7"/><circle id="hx1" r="4.5" fill="var(--ctl)" stroke="var(--card)" stroke-width="2"/></g>`;
+  g += `<rect class="hit" x="${P.l}" y="0" width="${iw}" height="${top2 + H2}" tabindex="0" aria-label="Explorer les valeurs jour par jour avec les flèches"/>`;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+  svg.innerHTML = g;
+
+  const fmtV = (k, v) => v == null ? "—" : k === "sleep_h" ? fmtDur(v * 60) : `${Math.round(v)}${HM[k].u ? " " + HM[k].u : ""}`;
+  const lastV = [...D].reverse().find(z => z.m != null);
+  $("#legendHealth").innerHTML =
+    `<span><i class="k-line" style="background:var(--ctl)"></i>${M.l}, moyenne 7 j${lastV ? ` <b>${fmtV(H_METRIC, lastV.m)}</b>` : ""}</span>` +
+    `<span><i class="k-box" style="background:var(--ctl);opacity:.45;border-radius:50%"></i>Valeur du jour</span>` +
+    (band ? `<span><i class="k-box" style="background:var(--ok);opacity:.25"></i>Plage normale VFC</span>` : "") +
+    `<span><i class="k-box" style="background:var(--atl);opacity:.55"></i>Charge (RE)</span>`;
+
+  const hx = svg.querySelector("#hx"), hit = svg.querySelector(".hit");
+  let cur = n - 1;
+  const show = i => {
+    cur = Math.max(0, Math.min(n - 1, i)); const z = D[cur], xx = x(cur);
+    hx.style.display = "";
+    svg.querySelector("#hxl").setAttribute("x1", xx); svg.querySelector("#hxl").setAttribute("x2", xx);
+    const c = svg.querySelector("#hx1"); c.style.display = z.v == null ? "none" : ""; if (z.v != null) { c.setAttribute("cx", xx); c.setAttribute("cy", y1(z.v)); }
+    const acts = BY_DAY.get(z.d) || [], h = z.h || {};
+    tip.innerHTML = `<div class="h">${esc(fmtDay(z.d))}</div>` +
+      Object.keys(HM).filter(k => k === H_METRIC || HM[k].get(h) != null).map(k => tipRow(k === H_METRIC ? "var(--ctl)" : "transparent", HM[k].l, fmtV(k, HM[k].get(h)))).join("") +
+      (h.sleep_score != null ? `<div class="r"><span>Score sommeil</span><b>${h.sleep_score}</b></div>` : "") +
+      `<div class="r" style="margin-top:4px"><span>Charge du jour</span><b>${z.load ? Math.round(z.load) : "—"}</b></div>` +
+      (acts.length ? `<div class="muted" style="margin-top:2px;font-size:11px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(acts.map(a => a.name).join(", "))}</div>` : "");
+    const r = svg.getBoundingClientRect();
+    placeTip(tip, wrap, xx * r.width / W, 0, true);
+  };
+  const hide = () => { hx.style.display = "none"; tip.hidden = true; };
+  const fromEvt = e => { const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) * W / r.width; return Math.round((px - P.l) / (iw / Math.max(1, n - 1))); };
+  hit.addEventListener("pointermove", e => show(fromEvt(e)));
+  hit.addEventListener("pointerdown", e => show(fromEvt(e)));
+  hit.addEventListener("pointerleave", hide);
+  hit.addEventListener("focus", () => show(cur));
+  hit.addEventListener("blur", hide);
+  hit.addEventListener("keydown", e => {
+    const step = {ArrowLeft: -1, ArrowRight: 1, PageUp: -7, PageDown: 7, Home: -1e4, End: 1e4}[e.key];
+    if (step) { e.preventDefault(); show(cur + step); } else if (e.key === "Escape") hide();
+  });
 }
 
 /* ---------- plan draft (par navigateur) ---------- */
@@ -1426,7 +1640,7 @@ function renderWeeksChart() {
 
 function renderCharts() {
   if ($("#tab-apercu").hidden) return;
-  renderFormChart(); renderWeeksChart();
+  renderFormChart(); renderWeeksChart(); renderHealthChart();
 }
 
 /* ---------- rendu : plan ---------- */
@@ -1844,7 +2058,7 @@ function renderUpdated() {
 
 function renderAll() {
   renderUpdated();
-  renderToday(); renderKpis(); renderCharts(); renderPlan(); renderRules(); renderAnalysis(); renderQuality(); renderActivities(); renderLib();
+  renderToday(); renderRecovery(); renderKpis(); renderCharts(); renderPlan(); renderRules(); renderAnalysis(); renderQuality(); renderActivities(); renderLib();
   renderCoach();
 }
 
@@ -2004,7 +2218,13 @@ $("#rangeSeg").addEventListener("click", e => {
   RANGE = +b.dataset.range;
   try { localStorage.setItem("range", RANGE); } catch {}
   $$("#rangeSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
-  renderFormChart();
+  renderFormChart(); renderHealthChart();
+});
+$("#healthSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  H_METRIC = b.dataset.m;
+  try { localStorage.setItem("healthMetric", H_METRIC); } catch {}
+  renderHealthChart();
 });
 $("#sportSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -2083,7 +2303,7 @@ $("#showPass").addEventListener("click", () => {
 });
 
 $("#lock").addEventListener("click", () => {
-  PASS = null; DATA = null; PLAN_FILE = null; PLAN = null; SECRETS = {};
+  PASS = null; DATA = null; PLAN_FILE = null; PLAN = null; SECRETS = {}; HEALTH = null; H_BY_DAY = new Map();
   resetCoach(); clearLib();
   $("#app").hidden = true; $("#gate").hidden = false;
   $("#pass").value = ""; $("#pass").focus();
@@ -2259,7 +2479,12 @@ Bibliothèque (base de ta méthode) : le premier message contient aussi « bibli
 - Adapte le dosage au niveau et au volume réel de l'athlète. Les programmes du livre (5 à 16 h par semaine) sont des exemples pour des compétiteurs : inspire-toi de leur structure, ne les copie pas.
 - Les zones du livre sont en % de FTP. Sans FTP mesurée, traduis-les avec les zones FC des règles de l'athlète et la sensation, et dis-le.
 - Appelle consulter_bibliotheque pour lire la fiche complète d'une séance, d'un exercice ou d'un programme (détail jour par jour) avant de t'en inspirer précisément.
-- Quand une recommandation s'appuie sur un principe du livre, nomme-le brièvement (par ex. « principe du livre : vagues de charge »).`;
+- Quand une recommandation s'appuie sur un principe du livre, nomme-le brièvement (par ex. « principe du livre : vagues de charge »).
+
+Santé (montre Garmin) : quand « sante_garmin » est présent, il donne par jour le sommeil, la VFC nocturne et sa plage normale, la FC de repos, la Body Battery, le stress, les pas, les étages, les calories et la SpO2, ainsi que le dernier VO2max et le poids. « recuperation_derniere_nuit » résume les signaux de la dernière nuit (feu vert, orange ou rouge).
+- Croise ces données avec la charge et les séances : VFC sous la plage normale ou statut bas, FC de repos nettement au-dessus de sa moyenne, sommeil court ou Body Battery basse plusieurs jours de suite signalent une fatigue. Allège alors l'intensité (Z1-Z2, séance raccourcie ou décalée) plutôt que d'ajouter du volume.
+- Un seul jour isolé ne justifie pas de refaire le plan : signale-le et propose au plus d'adapter la séance du jour.
+- Quand une recommandation s'appuie sur ces données, cite la valeur (par ex. « VFC 48 ms, sous ta plage 52-65 »). Ce ne sont pas des données médicales : en cas de doute sur la santé, renvoie vers un médecin.`;
 
 const S = (type, extra = {}) => ({type, ...extra});
 const COACH_TOOLS = [{functionDeclarations: [{
@@ -2329,6 +2554,24 @@ function libLookup(id) {
   return x;
 }
 
+/* santé Garmin pour le coach : une ligne par jour (nuit du jour J, activité quotidienne du jour J) */
+function healthContext(today, n) {
+  if (!HEALTH?.days?.length) return undefined;
+  const since = addDays(today, -(n - 1)), d = hNight(today), r = d && recoveryOf(d);
+  const vo2 = hLatest("vo2", today, 120), vo2b = hLatest("vo2_bike", today, 120), wt = hLatest("weight", today, 60);
+  const cols = ["date", "sommeil_h", "score_sommeil", "profond_h", "rem_h", "vfc_ms", "vfc_statut", "vfc_plage", "fc_repos", "bb_reveil", "bb_max", "stress", "pas", "etages", "kcal", "kcal_actives", "spo2"];
+  return {
+    note: "Montre Garmin. Sommeil, VFC, FC repos et Body Battery au réveil = nuit précédant la date ; stress, pas, étages, calories = journée entière.",
+    recuperation_derniere_nuit: r ? {date: d, feu: r.lbl, signaux: r.why, fc_repos_moy_28j: round1(hBase(x => x.rhr, d) ?? 0) || undefined} : undefined,
+    vo2max: vo2 ? {general: vo2.v, velo: vo2b?.v, date: vo2.d} : vo2b ? {velo: vo2b.v, date: vo2b.d} : undefined,
+    poids: wt ? {kg: wt.v, masse_grasse_pct: wt.h.fat, date: wt.d} : undefined,
+    quotidien: {colonnes: cols, lignes: HEALTH.days.filter(h => h.d >= since && h.d <= today).map(h => [h.d.slice(5), h.sleep_h ?? null, h.sleep_score ?? null,
+      h.deep_h ?? null, h.rem_h ?? null, h.hrv ?? null, h.hrv_status ? HRV_FR[h.hrv_status.toUpperCase()] || h.hrv_status : null,
+      h.hrv_lo ? `${h.hrv_lo}-${h.hrv_hi}` : null, h.rhr ?? null, h.bb_wake ?? null, h.bb_max ?? null, h.stress ?? null, h.steps ?? null,
+      h.floors ?? null, h.kcal ?? null, h.kcal_act ?? null, h.spo2 ?? null])}
+  };
+}
+
 /* contexte envoyé au modèle : ni noms d'activités, ni heures de départ, ni identifiants Strava */
 function coachContext(compact = false) {
   const today = todayISO(), since = addDays(today, -55);
@@ -2351,6 +2594,7 @@ function coachContext(compact = false) {
         annulee: s.skip || undefined, modele: s.model || undefined, statut: statusFor(s).label, realise_min: actualFor(s).min}))})),
       analyses_recentes: [...PLAN.analysis].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
     },
+    sante_garmin: healthContext(today, 28),
     bibliotheque: libContext()
   });
 }
@@ -2376,6 +2620,7 @@ function coachContextCompact(today, opt) {
       semaines_passees_non_detaillees: PLAN.weeks.filter(w => w.start < addDays(mondayOf(today), -7)).length || undefined,
       analyses_recentes: [...PLAN.analysis].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 1)
     },
+    sante_garmin: healthContext(today, 14),
     bibliotheque: libContext(true)
   });
 }
@@ -2652,6 +2897,7 @@ $("#coachReset").addEventListener("click", () => { if (COACH_BUSY) return; reset
 
 /* ---------- démarrage ---------- */
 try { const r = +localStorage.getItem("range"); if ([42, 90, 180].includes(r)) RANGE = r; } catch {}
+try { const m = localStorage.getItem("healthMetric"); if (m in HM) H_METRIC = m; } catch {}
 $$("#rangeSeg button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.range === RANGE));
 applyTheme(document.documentElement.dataset.theme || null);
 $("#pass").focus();

@@ -13,13 +13,18 @@ docs/data.enc.json             Données Strava chiffrées (généré par fetch_s
 docs/plan.enc.json             Plan chiffré : commité depuis la page (API GitHub) ou par encrypt_plan.py
 docs/bibliotheque.enc.json     Bibliothèque d'entraînement chiffrée (encrypt_bibliotheque.py)
 docs/biblio/*.bin              Illustrations des exercices, chiffrées une à une (clé dans la bibliothèque)
+docs/garmin.enc.json           Données santé Garmin chiffrées (phrase), générées par fetch_garmin.py
+state/garmin_tokens.enc.json   Jetons Garmin chiffrés avec GARMIN_TOKEN_KEY (pas la phrase), réécrits par le bot quand ils tournent
 tools/fetch_strava.py          Strava → métriques → chiffrement → docs/data.enc.json
+tools/fetch_garmin.py          Garmin Connect → docs/garmin.enc.json (historique fusionné, 7 derniers jours relus)
+tools/garmin_login.py          Connexion Garmin locale (MFA), crée private/garmin.key et state/garmin_tokens.enc.json
 tools/encrypt_plan.py          private/plan.json → docs/plan.enc.json
 tools/encrypt_bibliotheque.py  private/bibliotheque.json + private/livre/images → docs/bibliotheque.enc.json + docs/biblio/
 tools/decrypt_plan.py          docs/plan.enc.json → private/plan.json (à lancer avant toute édition locale)
 tools/crypto_util.py           AES-GCM, PBKDF2-SHA256, utilisé par les scripts Python
-requirements.txt               requests==2.32.3, cryptography==43.0.3
+requirements.txt               requests==2.34.2, cryptography==43.0.3, garminconnect==0.3.19
 private/plan.json              Plan source, git-ignoré, JAMAIS commité
+private/garmin.key             Clé des jetons Garmin (= secret GARMIN_TOKEN_KEY), git-ignorée
 private/bibliotheque.json      Bibliothèque source (générée), git-ignorée
 private/livre/                 Livre « The Science of Cycling » (md, pages), build_bibliotheque.py, images réduites, img.key : git-ignoré
 HANDOFF.md                     Notes de passation, git-ignoré
@@ -34,6 +39,15 @@ HANDOFF.md                     Notes de passation, git-ignoré
 5. `compute()` calcule CTL, ATL, TSB via `ewma()`.
 6. `encrypt_json()` écrit `docs/data.enc.json`. Le workflow ne commit que ce fichier, et seulement s'il a changé.
 7. Dans le navigateur, `index.html` demande la phrase, dérive la clé, déchiffre `data.enc.json` et `plan.enc.json`, puis appelle `renderAll()`.
+
+## Garmin Connect (santé)
+
+- Pas d'API officielle pour les particuliers : bibliothèque non officielle `garminconnect` (jetons DI, plus de garth). Garmin peut casser l'accès : l'étape du workflow a `continue-on-error`, la mise à jour Strava passe quand même. Étape ignorée sans secret `GARMIN_TOKEN_KEY` ou sans `state/garmin_tokens.enc.json`.
+- Mise en place : `python tools/garmin_login.py` (email, mot de passe, MFA, jamais enregistrés), `gh secret set GARMIN_TOKEN_KEY < private/garmin.key`, commit de `state/garmin_tokens.enc.json`. Premier run : 180 jours d'historique (`GARMIN_BACKFILL`), puis 7 jours relus par run (`GARMIN_DAYS`), 400 jours conservés (`GARMIN_KEEP`). Si l'authentification échoue (refresh token expiré), relancer `garmin_login.py` et commiter le fichier de jetons.
+- Jetons chiffrés avec une clé aléatoire distincte de la phrase (`encrypt_with_key` dans `crypto_util.py`, format `{v, iv, ct}`) : la phrase ne donne pas accès au compte Garmin.
+- `docs/garmin.enc.json` : `{generated, days: [...]}`, un objet par jour (clés absentes si pas de donnée) : `steps`, `floors`, `kcal`, `kcal_act`, `rhr`, `stress`, `bb_max`, `bb_min`, `bb_wake`, `spo2`, `spo2_min`, `resp`, `sleep_h`, `deep_h`, `rem_h`, `light_h`, `awake_h`, `sleep_score`, `hrv`, `hrv_7d`, `hrv_status`, `hrv_lo`, `hrv_hi`, `vo2`, `vo2_bike`, `weight` (kg), `fat` (%). Convention Garmin : sommeil, VFC, FC repos et `bb_wake` du jour J = nuit qui précède J.
+- Page : `HEALTH`, `H_BY_DAY` (dans `indexData`), `HM` (indicateurs du graphe), `hBase` (moyenne 28 j), `hNight`, `hLatest`, `recoveryOf` (feu : VFC basse 2 pts, déséquilibrée 1, FC repos +5 bpm 2 / +3 bpm 1, sommeil score < 60 ou < 6 h 1, Body Battery réveil < 30 1 ; rouge ≥ 3), `isHard` (séance intense d'après la fiche ou le titre). Carte `#recCard` (`renderRecovery`, sous `#today`) et graphe `#chartHealth` (`renderHealthChart`, indicateur `#healthSeg` mémorisé dans `localStorage["healthMetric"]`, période `RANGE`). Les deux sont masqués sans données Garmin. Effacés au verrouillage.
+- Coach : `healthContext` ajoute `sante_garmin` (28 jours, 14 en compact) ; consignes dans `COACH_SYS`.
 
 ## Chiffrement (à ne pas modifier sans raison)
 
@@ -117,7 +131,7 @@ Clés de premier niveau : `updated`, `season`, `rules`, `weeks`, `analysis`. Sé
 
 ## Règles pour les modifications
 
-- Ne jamais commiter `private/`, `HANDOFF.md`, `.venv/`, ni de phrase de passe, de client secret, de refresh token ou d'access token.
+- Ne jamais commiter `private/`, `HANDOFF.md`, `.venv/`, ni de phrase de passe, de client secret, de refresh token ou d'access token (les jetons Garmin ne sont commités que chiffrés, dans `state/`).
 - Ne jamais afficher de données personnelles en clair dans `docs/` : tout passe par le chiffrement.
 - Pour un changement visuel (CSS, mise en page, couleurs, graphes) : modifier `docs/index.html` seul. Aucun re-chiffrement nécessaire.
 - Pour un changement de logique de calcul : modifier `tools/fetch_strava.py`, puis lancer le workflow manuellement pour régénérer `docs/data.enc.json`.

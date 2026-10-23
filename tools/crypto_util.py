@@ -34,6 +34,19 @@ def encrypt_json(obj, passphrase: str) -> dict:
     return {"v": 1, "kdf": "PBKDF2-SHA256", "iter": ITER, "salt": _b64(salt), "iv": _b64(iv), "ct": _b64(ct)}
 
 
+def encrypt_with_key(obj, key: bytes) -> dict:
+    """Chiffre avec une clé brute de 32 octets (jetons Garmin : clé distincte de la phrase)."""
+    iv = os.urandom(12)
+    ct = AESGCM(key).encrypt(iv, json.dumps(obj).encode("utf-8"), None)
+    return {"v": 1, "iv": _b64(iv), "ct": _b64(ct)}
+
+
+def decrypt_with_key(blob: dict, key: bytes):
+    iv = base64.b64decode(blob["iv"])
+    ct = base64.b64decode(blob["ct"])
+    return json.loads(AESGCM(key).decrypt(iv, ct, None).decode("utf-8"))
+
+
 def decrypt_json(blob: dict, passphrase: str):
     salt = base64.b64decode(blob["salt"])
     iv = base64.b64decode(blob["iv"])
