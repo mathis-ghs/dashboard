@@ -1892,7 +1892,8 @@ function renderKpiChart() {
 function spring(onFrame) {
   let x = 0, v = 0, to = 0, damp = 1, resp = .35, raf = 0, done = null, last = 0;
   const tick = t => {
-    const dt = Math.min(.032, (t - last) / 1000); last = t;
+    /* l'horodatage de rAF peut précéder performance.now() : pas de temps borné à [0, 32 ms] */
+    const dt = Math.max(0, Math.min(.032, (t - last) / 1000)); last = t;
     const k = (2 * Math.PI / resp) ** 2, c = 4 * Math.PI * damp / resp;
     v += (-k * (x - to) - c * v) * dt; x += v * dt;
     if (Math.abs(v) < .002 && Math.abs(x - to) < .001) { x = to; v = 0; raf = 0; onFrame(x); const d = done; done = null; d?.(); return; }
@@ -1923,17 +1924,22 @@ function kpiFrame(p) {
     panel.style.opacity = "";
     return;
   }
-  const r = KS.rect, c = KS.from || {left: r.left, top: r.top + 24, width: r.width * .96, height: r.height};
-  const s = c.width / r.width + (1 - c.width / r.width) * q;
-  const dx = (c.left + c.width / 2 - (r.left + r.width / 2)) * (1 - q), dy = (c.top + c.height / 2 - (r.top + r.height / 2)) * (1 - q);
-  panel.style.transform = `translate3d(${dx}px,${dy}px,0) scale(${s})`;
+  /* le rectangle visible passe exactement de celui de la carte à celui du panneau :
+     échelle uniforme sur la largeur (pas de texte déformé), hauteur en trop découpée par clip-path */
+  const r = KS.rect, c = KS.from || {left: r.left + r.width * .02, top: r.top + 24, width: r.width * .96, height: r.height};
+  const lerp = (a, b) => a + (b - a) * q;
+  const w = lerp(c.width, r.width), h = lerp(c.height, r.height), s = w / r.width;
+  const cut = Math.max(0, r.height - h / s), rad = lerp(20, 28) / s;
+  panel.style.transformOrigin = "0 0";
+  panel.style.transform = `translate3d(${lerp(c.left, r.left) - r.left}px,${lerp(c.top, r.top) - r.top}px,0) scale(${s})`;
+  panel.style.clipPath = q < 1 ? `inset(0 0 ${cut}px 0 round ${rad}px)` : "";
   panel.style.opacity = Math.min(1, q * 2.5);
 }
 const SP = spring(kpiFrame);
 function measureKpi() {
   const panel = $("#kpiPanel");
   KS.mobile = matchMedia("(max-width:640px)").matches;
-  panel.style.transform = "none"; KS.rect = panel.getBoundingClientRect();
+  panel.style.transform = "none"; panel.style.clipPath = ""; panel.style.transformOrigin = ""; KS.rect = panel.getBoundingClientRect();
 }
 function openKpi(k, from) {
   const dlg = $("#kpiDlg");
