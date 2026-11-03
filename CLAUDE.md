@@ -21,6 +21,7 @@ tools/garmin_login.py          Connexion Garmin locale (MFA), crée private/garm
 tools/encrypt_plan.py          private/plan.json → docs/plan.enc.json
 tools/encrypt_bibliotheque.py  private/bibliotheque.json + private/livre/images → docs/bibliotheque.enc.json + docs/biblio/
 tools/decrypt_plan.py          docs/plan.enc.json → private/plan.json (à lancer avant toute édition locale)
+tools/import_plan.py           Fusionne un nouveau plan en clair dans docs/plan.enc.json (garde les semaines antérieures)
 tools/crypto_util.py           AES-GCM, PBKDF2-SHA256, utilisé par les scripts Python
 requirements.txt               requests==2.34.2, cryptography==43.0.3, garminconnect==0.3.19
 private/plan.json              Plan source, git-ignoré, JAMAIS commité
@@ -68,7 +69,7 @@ HANDOFF.md                     Notes de passation, git-ignoré
 - Éléments d'identification : `#gate`, `#unlockForm`, `#pass`, `#app`, `#updated`, `#refresh`, `#theme`, `#settings`, `#lock`.
 - Six onglets (`showTab`, routage par hash `#apercu`, `#plan`, `#coach`, `#bibliotheque`, `#activites`, `#notes`), en pilules au centre de `.top-row`. Sur mobile (≤ 640 px), la barre d'onglets devient une capsule de verre flottante en bas d'écran.
   - Aperçu : en-tête `.page-h.hello` (`#helloTitle` salutation selon l'heure, `#helloSub` date, forme, fraîcheur, heures de la semaine ; rempli par `renderToday`), puis `#kpiCards`, puis `#today` (séance du jour, prochaine séance, semaine en cours avec 7 pastilles et écart au plan : prévu à date, réalisé, écart, compte des séances), `#kpis` (CTL/ATL/TSB avec variation sur 7 j, jauge TSB, volume), `#chartForm` (CTL/ATL + panneau TSB, période 6 sem./3 mois/6 mois), `#chartWeeks` (heures par semaine empilées par sport, cible du plan). Les cartes KPI `#kpiCards` (Forme, Fatigue, Fraîcheur, Volume) sont des boutons en verre (pastille d'icône `.kic`, puce de variation `.chip-d` verte si l'évolution va dans le bon sens, fatigue à la baisse, courbe dans la teinte `--kc`) qui ouvrent la feuille `#kpiDlg` (voir « Mouvement »).
-  - Plan : `#plan` en lecture par défaut, bouton `#editPlan` pour passer en édition (séances, objectif et cible de chaque semaine, ajout et suppression de semaines). `#draftBar` apparaît quand le brouillon local diffère du plan enregistré, avec `#savePlan` (commit GitHub), `#resetPlan`, `#exportPlan`.
+  - Plan : en tête `#planToday` (même carte keynote que `#today` : séance du jour, prochaine séance, semaine en cours), puis `#planNav` (bande `#planStrip` : une colonne par semaine, hauteur = cible, remplissage = réalisé, groupées par `block`, point rose = objectif, anneau = test ; flèches ←/→, Début/Fin ; `#planNow` revient à la semaine en cours), puis `#plan` : la seule semaine choisie (`PLAN_SEL`, lundi ISO, en mémoire, semaine en cours par défaut ; `selWeekIndex`, `selectWeek`, `renderStrip`, `centerStrip`), flèches précédente / suivante, glissement `.wk-anim`. Lecture par défaut, bouton `#editPlan` pour passer en édition (séances, objectif, bloc et cible de chaque semaine, ajout et suppression de semaines). `#draftBar` apparaît quand le brouillon local diffère du plan enregistré, avec `#savePlan` (commit GitHub), `#resetPlan`, `#exportPlan`.
   - Coach : chat `#chat`, saisie `#coachForm` (voir « Coach IA »).
   - Biblio : `#libSeg` (Vélo, Renfo, Étirements, Exercices, Programmes, Principes), `#libPhase`, `#libSearch`, liste `#lib`, fiche `#libDlg` (voir « Bibliothèque »).
   - Activités : filtres `#sportSeg` et `#actSearch`, liste `#acts` groupée par semaine avec lien vers Strava, `#quality`.
@@ -128,7 +129,9 @@ HANDOFF.md                     Notes de passation, git-ignoré
 
 ## Format de `private/plan.json`
 
-Clés de premier niveau : `updated`, `season`, `rules`, `weeks`, `analysis`. Séance : `id`, `date`, `sport`, `type`, `title`, `duration_min`, `notes`, `skip` (optionnel), `model` (optionnel, id d'une séance de la bibliothèque). Les textes de `analysis` sont rendus en paragraphes (séparés par des lignes vides), le HTML est échappé.
+Clés de premier niveau : `updated`, `season`, `rules`, `weeks`, `analysis`. Semaine : `start` (lundi), `focus`, `target_h`, `block` (optionnel, ex. « B1 · Base 1 », envoyé au coach comme `bloc`), `sessions`. Les types de séance `Test` et `Objectif` sont signalés dans la bande des semaines. Séance : `id`, `date`, `sport`, `type`, `title`, `duration_min`, `notes`, `skip` (optionnel), `model` (optionnel, id d'une séance de la bibliothèque). Les textes de `analysis` sont rendus en paragraphes (séparés par des lignes vides), le HTML est échappé.
+
+Nouveau plan complet : `git pull`, `python tools/import_plan.py private/<plan>.json` (déchiffre, garde les semaines antérieures à la première semaine importée, remplace la suite, la saison et les règles, ajoute les analyses en tête, écrit `private/plan.json` et `docs/plan.enc.json`), puis commit de `docs/plan.enc.json`.
 
 Édition locale : `git pull`, `python tools/decrypt_plan.py` (le plan a pu être modifié depuis la page), éditer, `python tools/encrypt_plan.py`, puis commit de `docs/plan.enc.json`.
 

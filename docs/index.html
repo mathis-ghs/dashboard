@@ -365,16 +365,46 @@ details.help p{margin:8px 0 0}
 .draft{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);color:var(--fg);border-radius:var(--r);padding:12px 12px 12px 18px;font-size:14px}
 .draft .ico{color:var(--warn)}
 .draft p{margin:0;flex:1;min-width:200px}
-.week{padding:0;overflow:hidden}
-.week > summary,.week-head{list-style:none;cursor:pointer;padding:18px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center}
-.week > summary::-webkit-details-marker{display:none}
-.week-head .dates{font-family:var(--font-d);font-size:17px;font-weight:700;letter-spacing:-.015em}
-.week-head .focus{color:var(--mut);font-size:14px;grid-column:1}
-.week-head .prog{grid-column:1 / -1;display:flex;gap:10px;align-items:center;font-size:12px;color:var(--mut);margin-top:6px}
-.week-head .prog .bar{flex:1}
-.week-head .chev{transition:transform .2s;color:var(--mut)}
-.week[open] .chev{transform:rotate(180deg)}
-.week.current{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),0 12px 32px rgba(201,36,95,.12)}
+/* sélecteur de semaines : une colonne par semaine (cible en voile, réalisé en dégradé), groupées par bloc */
+.wk-nav{padding-bottom:var(--sp-3)}
+.wk-nav .card-h{margin-bottom:6px}
+.wk-strip{position:relative;display:flex;gap:var(--sp-4);overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;padding:2px 2px 4px;margin:0 -6px}
+.wk-strip::-webkit-scrollbar{display:none}
+.wk-grp{display:flex;flex-direction:column;gap:6px;flex:none}
+.wk-blk{width:0;min-width:100%;font-size:11px;font-weight:650;letter-spacing:.04em;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px 5px;border-bottom:1px solid var(--line)}
+.wk-row{display:flex;gap:2px}
+.wk-chip{position:relative;flex:none;width:44px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 6px;border:0;border-radius:14px;background:transparent;color:var(--mut);font:inherit;cursor:pointer;transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease)}
+@media (hover:hover){.wk-chip:hover{background:var(--soft);color:var(--fg)}}
+.wk-chip:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.wk-col{position:relative;display:block;width:12px;height:52px}
+.wk-col i{position:absolute;left:0;right:0;bottom:0;border-radius:99px}
+.wk-col .t{background:color-mix(in srgb,var(--fg) 13%,transparent)}
+.wk-col .d{background:var(--grad)}
+.wk-chip.st-past .wk-col .d{opacity:.55}
+.wk-chip.st-cur{color:var(--fg)}
+.wk-chip.st-cur .wk-col .t{box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent),0 4px 14px color-mix(in srgb,var(--acc) 45%,transparent)}
+.wk-chip.sel{background:var(--soft);color:var(--fg);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--fg) 45%,transparent)}
+.wk-n{display:flex;flex-direction:column;align-items:center;font-size:13px;font-weight:650;line-height:1.15;font-variant-numeric:tabular-nums}
+.wk-n small{font-size:10px;font-weight:500;min-height:1.15em}
+.wk-flag{position:absolute;top:4px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--acc)}
+.wk-flag.test{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}
+/* carte de la semaine choisie : flèches de part et d'autre du titre */
+.week-card{padding:0;overflow:hidden;gap:0}
+.wk-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--sp-3);align-items:center;padding:18px 16px 4px}
+.wk-title{min-width:0;text-align:center}
+.wk-title .eyebrow{margin-bottom:4px;font-size:12px}
+.wk-title h3{font-size:clamp(20px,1vw + 14px,26px);font-weight:700;letter-spacing:var(--track-h);line-height:1.15}
+.wk-title .focus{color:var(--mut);font-size:14px;margin-top:4px}
+.wk-next .ico{transform:scaleX(-1)}
+.wk-head .btn.icon:disabled{opacity:.3;cursor:default}
+.wk-prog{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center;padding:8px 22px 18px;font-size:12px;color:var(--mut)}
+.wk-prog .num{font-weight:650;color:var(--fg);font-variant-numeric:tabular-nums}
+.wk-prog .bar{flex:0 1 220px;min-width:100px}
+.week-card .sessions{border-top:1px solid var(--line)}
+.sess.cont{border-top-color:transparent;padding-top:2px}
+.sess.cont .sess-day{visibility:hidden}
+@keyframes wk-in{from{opacity:0;transform:translate3d(var(--dx,0),0,0)}}
+.wk-anim{animation:wk-in .42s var(--ease) both}
 .sessions{border-top:1px solid var(--line)}
 .sess{display:grid;grid-template-columns:52px 34px minmax(0,1fr) auto;gap:14px;align-items:start;padding:14px 22px;border-top:1px solid var(--line)}
 .sess:first-child{border-top:0}
@@ -396,7 +426,7 @@ details.help p{margin:8px 0 0}
 .sess-edit .notes-f{grid-column:1 / 4}
 .sess-edit .sess-btns{grid-column:4 / -1;display:flex;gap:6px;justify-content:flex-end}
 .sess-edit.skip{opacity:.55}
-.week-foot{padding:10px 18px 14px;border-top:1px solid var(--line)}
+.week-foot{display:flex;flex-wrap:wrap;gap:8px;padding:10px 18px 14px;border-top:1px solid var(--line)}
 .empty{padding:24px;text-align:center;color:var(--mut)}
 
 /* ---------- activités ---------- */
@@ -438,7 +468,7 @@ details.help p{margin:8px 0 0}
 .gap3 .v{font-size:17px;font-weight:650;line-height:1.2}
 .gap3 .l{font-size:11px;color:var(--mut)}
 .sess-count{font-size:12px;color:var(--mut)}
-.week-edit{display:grid;grid-template-columns:minmax(0,1fr) 110px auto;gap:8px 10px;padding:12px 18px;border-top:1px solid var(--line);align-items:end;background:var(--soft)}
+.week-edit{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 110px auto;gap:8px 10px;padding:12px 18px;border-top:1px solid var(--line);align-items:end;background:var(--soft)}
 .week-edit label{display:grid;gap:3px;font-size:11px;color:var(--mut);min-width:0}
 .week-edit input{height:36px;padding-block:0;background:var(--card)}
 .week-edit .btn{height:36px}
@@ -659,13 +689,15 @@ dialog.sheet[open]::backdrop{background:transparent;-webkit-backdrop-filter:none
   .hero-t{font-size:18px}
   .sess{grid-template-columns:40px minmax(0,1fr) auto;padding:12px 14px;gap:10px}
   .sess .sport-ico{display:none}
-  .week > summary,.week-head{padding:14px}
+  .wk-head{padding:14px 8px 4px}
+  .wk-prog{padding:8px 14px 14px}
   .week-foot{padding:10px 14px 14px}
   #toast{bottom:calc(84px + env(safe-area-inset-bottom))}
   .composer{bottom:calc(64px + env(safe-area-inset-bottom))}
   .coach{min-height:calc(100vh - 170px)}
   .chat > *{scroll-margin-bottom:180px}
   .week-edit{grid-template-columns:minmax(0,1fr) 90px;padding:12px 14px}
+  .week-edit .wf-focus{grid-column:1 / -1}
   .week-edit .btn{grid-column:1 / -1}
   .op{grid-template-columns:minmax(0,1fr)}
   .op .tag{justify-self:start;padding:2px 8px}
@@ -788,7 +820,6 @@ body{background:var(--base)}
 .keynote .weekbox,.weekbox{background:rgba(255,255,255,.06);border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);-webkit-backdrop-filter:none;backdrop-filter:none}
 .rec-t{background:var(--soft)}
 .draft{background:var(--warn-soft);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);box-shadow:var(--glass-edge)}
-.week.current{box-shadow:inset 0 0 0 1.5px var(--acc),var(--glass-sh)}
 .proposal{box-shadow:inset 0 0 0 1.5px var(--acc),var(--glass-sh)}
 .sess.is-today{background:var(--acc-soft)}
 .act{border-top-color:var(--line)}
@@ -1169,7 +1200,12 @@ dialog.sheet{background:transparent;box-shadow:none;-webkit-backdrop-filter:none
           <button class="btn ghost icon" id="exportPlan" type="button" title="Exporter plan.json" aria-label="Exporter plan.json"><svg class="ico"><use href="#i-download"/></svg></button>
         </div>
       </div>
-      <div id="plan" class="panel"></div>
+      <div class="card today keynote" id="planToday"></div>
+      <section class="card wk-nav" id="planNav" aria-label="Semaines du plan">
+        <div class="card-h"><h2>Semaines</h2><button class="btn ghost" id="planNow" type="button" hidden>Revenir à cette semaine</button></div>
+        <div class="wk-strip" id="planStrip" role="toolbar" aria-label="Choisir une semaine"></div>
+      </section>
+      <section class="card week-card" id="plan" aria-live="polite"></section>
     </section>
 
     <!-- Coach -->
@@ -1791,7 +1827,8 @@ function renderToday() {
     ${week?.focus ? `<div class="muted">${esc(week.focus)}</div>` : ""}
     <div class="days">${days}</div>
   </div>`;
-  $("#today").innerHTML = `<div style="min-width:0">${left}</div>${right}`;
+  /* même carte en tête de l'onglet Plan : séance du jour et semaine en cours */
+  $("#today").innerHTML = $("#planToday").innerHTML = `<div style="min-width:0">${left}</div>${right}`;
   /* en-tête conversationnel : salutation selon l'heure, date et état du jour */
   const hr = new Date().getHours(), s = DATA.summary;
   $("#helloTitle").textContent = hr < 5 || hr >= 18 ? "Bonsoir" : hr < 12 ? "Bonjour" : "Bon après-midi";
@@ -2277,7 +2314,7 @@ function resetKpi() {
 }
 
 /* ---------- rendu : plan ---------- */
-function sessionRow(s, wi, si) {
+function sessionRow(s, wi, si, cont = false) {
   const today = todayISO();
   if (EDIT) {
     const opt = (v, l) => `<option value="${v}" ${s.sport === v ? "selected" : ""}>${l}</option>`;
@@ -2297,7 +2334,7 @@ function sessionRow(s, wi, si) {
   const st = statusFor(s), act = actualFor(s), d = dateOf(s.date);
   const res = st.key === "rest" ? `<span class="pill">Repos</span>`
     : `<span class="pill ${st.cls}">${st.label}</span>${act.min ? `<span>${fmtDur(act.min)} réalisé</span>` : ""}`;
-  return `<div class="sess ${s.skip ? "skip" : ""} ${s.date === today ? "is-today" : ""}" data-w="${wi}" data-s="${si}">
+  return `<div class="sess ${s.skip ? "skip" : ""} ${s.date === today ? "is-today" : ""} ${cont ? "cont" : ""}" data-w="${wi}" data-s="${si}">
     <div class="sess-day"><span class="wd">${d.toLocaleDateString("fr-FR", {weekday: "short"}).replace(".", "")}</span><span class="dn">${d.getDate()}</span></div>
     ${sportIco(s, true)}
     <div style="min-width:0"><div class="t">${esc(s.title)}</div>
@@ -2307,44 +2344,114 @@ function sessionRow(s, wi, si) {
   </div>`;
 }
 
-function renderPlan() {
+/* semaine affichée dans l'onglet Plan (lundi ISO), gardée en mémoire le temps de la session */
+let PLAN_SEL = null;
+const weekState = (w, today) => addDays(w.start, 6) < today ? "past" : w.start <= today ? "cur" : "next";
+const planHours = w => w.sessions.reduce((t, s) => t + (s.skip ? 0 : s.duration_min), 0) / 60;
+function selWeekIndex() {
+  const weeks = PLAN.weeks || [], today = todayISO();
+  let i = weeks.findIndex(w => w.start === PLAN_SEL);
+  if (i < 0) {
+    /* par défaut : la semaine en cours, sinon la prochaine, sinon la dernière */
+    i = weeks.findIndex(w => addDays(w.start, 6) >= today);
+    if (i < 0) i = weeks.length - 1;
+    PLAN_SEL = weeks[i]?.start ?? null;
+  }
+  return i;
+}
+
+function renderPlan(dir = 0) {
   const today = todayISO();
   const weeks = PLAN.weeks || [];
-  $("#planSeason").textContent = (PLAN.season || "Plan d'entraînement").replace(/ ([:;!?])/g, "\u00a0$1");
+  $("#planSeason").textContent = (PLAN.season || "Plan d'entraînement").replace(/ ([:;!?])/g, " $1");
   $("#planMeta").textContent = `Mis à jour le ${PLAN.updated ? fmtDM(PLAN.updated) : "?"} · ${weeks.length} semaine${weeks.length > 1 ? "s" : ""}`;
   $("#editPlan").setAttribute("aria-pressed", EDIT);
   $("#editPlan").classList.toggle("on", EDIT);
   $("#editPlan").lastChild.textContent = EDIT ? "Terminer" : "Modifier";
   renderDraftState();
-  const addWeek = EDIT ? `<div><button class="btn" type="button" data-act="addweek">${icon("plus")}Ajouter une semaine</button></div>` : "";
-  if (!weeks.length) { $("#plan").innerHTML = `<div class="card empty">Aucune semaine. Passer en mode « Modifier » pour en ajouter, ou demander au coach.</div>${addWeek}`; return; }
-  const open = new Set($$("#plan details[open]").map(d => d.dataset.w));
-  const first = !$("#plan").children.length || !$("#plan details");
-  $("#plan").innerHTML = weeks.map((w, wi) => {
-    const endISO = addDays(w.start, 6);
-    const current = w.start <= today && today <= endISO, past = endISO < today;
-    const planH = w.sessions.reduce((t, s) => t + (s.skip ? 0 : s.duration_min), 0) / 60;
-    const doneH = WEEKS.get(w.start)?.h ?? 0;
-    const target = w.target_h || planH;
-    const pct = target ? Math.min(100, doneH / target * 100) : 0;
-    const isOpen = first ? !past : open.has(String(wi));
-    const order = w.sessions.map((s, si) => [s, si]).sort((a, b) => a[0].date.localeCompare(b[0].date));
-    return `<details class="card week ${current ? "current" : ""}" data-w="${wi}" ${isOpen ? "open" : ""}>
-      <summary class="week-head">
-        <div class="dates">${esc(fmtDM(w.start))} → ${esc(fmtDM(endISO))} ${current ? `<span class="pill ok" style="margin-left:6px">Cette semaine</span>` : ""}</div>
-        <svg class="ico chev"><use href="#i-chev"/></svg>
-        <div class="focus">${esc(w.focus)}</div>
-        <div class="prog"><span class="num">${fr1(doneH)} / ${fr1(target)} h</span><div class="bar"><i style="width:${pct}%"></i></div><span>prévu ${fr1(planH)} h</span></div>
-      </summary>
-      ${EDIT ? `<div class="week-edit" data-w="${wi}">
-        <label>Objectif de la semaine<input type="text" value="${esc(w.focus)}" data-wf="focus"></label>
-        <label>Cible (h)<input type="number" min="0" step="0.5" inputmode="decimal" value="${w.target_h ?? ""}" data-wf="target_h"></label>
-        <button class="btn" type="button" data-act="delweek" data-w="${wi}">${icon("x")}Supprimer la semaine</button>
-      </div>` : ""}
-      <div class="sessions">${order.map(([s, si]) => sessionRow(s, wi, si)).join("") || `<div class="empty">Aucune séance.</div>`}</div>
-      ${EDIT ? `<div class="week-foot"><button class="btn" type="button" data-act="add" data-w="${wi}">${icon("plus")}Ajouter une séance</button></div>` : ""}
-    </details>`;
-  }).join("") + addWeek;
+  const addWeek = EDIT ? `<button class="btn" type="button" data-act="addweek">${icon("plus")}Ajouter une semaine</button>` : "";
+  $("#planNav").hidden = !weeks.length;
+  if (!weeks.length) {
+    $("#plan").innerHTML = `<div class="empty">Aucune semaine. Passer en mode « Modifier » pour en ajouter, ou demander au coach.</div>${addWeek ? `<div class="week-foot">${addWeek}</div>` : ""}`;
+    return;
+  }
+  const wi = selWeekIndex(), w = weeks[wi];
+  renderStrip(weeks, wi, today, dir);
+
+  const st = weekState(w, today), planH = planHours(w);
+  const doneH = WEEKS.get(w.start)?.h ?? 0, target = w.target_h || planH;
+  const pct = target ? Math.min(100, doneH / target * 100) : 0;
+  const ahead = Math.round((dateOf(w.start) - dateOf(mondayOf(today))) / 6048e5);
+  const rel = st === "cur" ? `<span class="pill ok">Cette semaine</span>`
+    : st === "past" ? `<span class="pill">Passée</span>` : `<span class="pill">Dans ${ahead} sem.</span>`;
+  const end = addDays(w.start, 6), sameMonth = w.start.slice(5, 7) === end.slice(5, 7);
+  const range = `${dateOf(w.start).getDate()}${sameMonth ? "" : " " + fmtDM(w.start).split(" ").slice(1).join(" ")} → ${fmtDM(end)}`;
+  const anim = dir ? ` wk-anim" style="--dx:${dir * 28}px` : "";
+  const order = w.sessions.map((s, si) => [s, si]).sort((a, b) => a[0].date.localeCompare(b[0].date));
+  $("#plan").innerHTML = `<div class="wk-head">
+      <button class="btn icon ghost wk-prev" type="button" data-nav="-1" aria-label="Semaine précédente" ${wi ? "" : "disabled"}>${icon("back")}</button>
+      <div class="wk-title${anim}">
+        <div class="eyebrow">${esc(w.block || "Semaine")} · ${wi + 1}/${weeks.length}</div>
+        <h3>${esc(range)}</h3>
+        ${w.focus ? `<div class="focus">${esc(w.focus)}</div>` : ""}
+      </div>
+      <button class="btn icon ghost wk-next" type="button" data-nav="1" aria-label="Semaine suivante" ${wi < weeks.length - 1 ? "" : "disabled"}>${icon("back")}</button>
+    </div>
+    <div class="wk-prog${anim}">${rel}<span class="num">${fr1(doneH)} / ${fr1(target)} h</span>
+      <div class="bar" role="progressbar" aria-label="Heures réalisées" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div><span>prévu ${fr1(planH)} h</span></div>
+    ${EDIT ? `<div class="week-edit" data-w="${wi}">
+      <label class="wf-focus">Objectif de la semaine<input type="text" value="${esc(w.focus)}" data-wf="focus"></label>
+      <label>Bloc<input type="text" value="${esc(w.block || "")}" data-wf="block" placeholder="B1 · Base 1"></label>
+      <label>Cible (h)<input type="number" min="0" step="0.5" inputmode="decimal" value="${w.target_h ?? ""}" data-wf="target_h"></label>
+      <button class="btn" type="button" data-act="delweek" data-w="${wi}">${icon("x")}Supprimer la semaine</button>
+    </div>` : ""}
+    <div class="sessions${anim}">${order.map(([s, si], k) => sessionRow(s, wi, si, k > 0 && order[k - 1][0].date === s.date)).join("") || `<div class="empty">Aucune séance.</div>`}</div>
+    ${EDIT ? `<div class="week-foot"><button class="btn" type="button" data-act="add" data-w="${wi}">${icon("plus")}Ajouter une séance</button>${addWeek}</div>` : ""}`;
+}
+
+/* bande des semaines : hauteur = cible, remplissage = réalisé, groupes par bloc consécutif */
+function renderStrip(weeks, wi, today, dir = 0) {
+  const max = Math.max(1, ...weeks.map(w => Math.max(w.target_h || planHours(w), WEEKS.get(w.start)?.h || 0)));
+  const groups = [];
+  weeks.forEach((w, i) => {
+    const b = w.block || "";
+    if (!groups.length || groups.at(-1).b !== b) groups.push({b, items: []});
+    groups.at(-1).items.push(i);
+  });
+  let month = "";
+  const chip = i => {
+    const w = weeks[i], st = weekState(w, today), d = dateOf(w.start);
+    const target = w.target_h || planHours(w), done = WEEKS.get(w.start)?.h || 0;
+    const m = d.toLocaleDateString("fr-FR", {month: "short"}), newMonth = m !== month; month = m;
+    const goal = w.sessions.some(s => s.type === "Objectif"), test = w.sessions.some(s => s.type === "Test");
+    const lbl = `Semaine du ${fmtDM(w.start)}${w.block ? ", " + w.block : ""}, ${st === "next" ? `${fr1(target)} h prévues` : `${fr1(done)} h sur ${fr1(target)} h`}${goal ? ", objectif" : test ? ", test" : ""}`;
+    return `<button type="button" class="wk-chip st-${st} ${i === wi ? "sel" : ""}" data-wk="${i}" aria-pressed="${i === wi}" tabindex="${i === wi ? 0 : -1}" aria-label="${esc(lbl)}" title="${esc(lbl)}">
+      ${goal ? `<span class="wk-flag"></span>` : test ? `<span class="wk-flag test"></span>` : ""}
+      <span class="wk-col"><i class="t" style="height:${Math.max(4, target / max * 100)}%"></i>${st === "next" || !done ? "" : `<i class="d" style="height:${Math.min(done, max) / max * 100}%"></i>`}</span>
+      <span class="wk-n">${d.getDate()}<small>${newMonth ? esc(m.replace(".", "")) : ""}</small></span>
+    </button>`;
+  };
+  $("#planStrip").innerHTML = groups.map(g => `<div class="wk-grp">${g.b ? `<div class="wk-blk" title="${esc(g.b)}">${esc(g.b)}</div>` : `<div class="wk-blk">&nbsp;</div>`}<div class="wk-row">${g.items.map(chip).join("")}</div></div>`).join("");
+  const cur = weeks.findIndex(w => weekState(w, today) === "cur");
+  $("#planNow").hidden = cur < 0 || cur === wi;
+  centerStrip(!!dir);
+}
+/* centre la semaine choisie dans la bande (sans effet tant que l'onglet est masqué) */
+function centerStrip(smooth = false) {
+  const strip = $("#planStrip"), c = strip.querySelector(".wk-chip.sel");
+  if (!c || !strip.clientWidth) return;
+  const left = c.offsetLeft - (strip.clientWidth - c.offsetWidth) / 2;
+  strip.scrollTo({left, behavior: smooth && !matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto"});
+}
+/* la bande prend sa largeur à l'affichage de l'onglet ou de l'app : recentrer à ce moment */
+if ("ResizeObserver" in window) new ResizeObserver(() => centerStrip()).observe($("#planStrip"));
+function selectWeek(i, focus = false) {
+  const weeks = PLAN.weeks || [], from = selWeekIndex();
+  i = Math.max(0, Math.min(weeks.length - 1, i));
+  if (i === from) return;
+  PLAN_SEL = weeks[i].start;
+  renderPlan(i > from ? 1 : -1);
+  if (focus) $("#planStrip .wk-chip.sel")?.focus({preventScroll: true});
 }
 
 function renderDraftState() {
@@ -2634,7 +2741,7 @@ function ficheSeance(t) {
     w.sessions.push(s);
     saveDraft(); renderPlan(); renderToday();
     $("#libDlg").close();
-    toast(`« ${s.title} » ajoutée au ${fmtDay(date)}`, "Voir le plan", () => showTab("plan"));
+    toast(`« ${s.title} » ajoutée au ${fmtDay(date)}`, "Voir le plan", () => { PLAN_SEL = mon; renderPlan(); showTab("plan"); });
   });
 }
 function ficheExercice(x) {
@@ -2716,6 +2823,7 @@ function showTab(name, focus = false) {
   if (name === "apercu" && DATA) renderCharts();
   if (name === "coach" && DATA) renderCoach();
   window.scrollTo({top: 0});
+  if (name === "plan" && PLAN) centerStrip();
   /* cascade de matérialisation : 40 ms entre panneaux visibles, 200 ms au plus */
   let n = 0;
   $$(`[data-panel="${name}"] :is(.card,.kpi,.acts,.page-h,.plan-h,.coach-h,.draft,.lib-bar,.filters)`).forEach(el => {
@@ -2783,7 +2891,20 @@ $("#plan").addEventListener("change", e => {
   saveDraft(); renderPlan(); renderToday();
 });
 
+/* choix de la semaine : bande, flèches, retour à la semaine en cours */
+$("#planStrip").addEventListener("click", e => { const c = e.target.closest(".wk-chip"); if (c) selectWeek(+c.dataset.wk); });
+$("#planStrip").addEventListener("keydown", e => {
+  const step = {ArrowLeft: -1, ArrowRight: 1, Home: -1e4, End: 1e4}[e.key];
+  if (step) { e.preventDefault(); selectWeek(selWeekIndex() + step, true); }
+});
+$("#planNow").addEventListener("click", () => {
+  const today = todayISO(), i = PLAN.weeks.findIndex(w => weekState(w, today) === "cur");
+  if (i >= 0) selectWeek(i);
+});
+
 $("#plan").addEventListener("click", e => {
+  const nav = e.target.closest("button[data-nav]");
+  if (nav) { selectWeek(selWeekIndex() + +nav.dataset.nav); return; }
   const btn = e.target.closest("button[data-act]"); if (!btn) return;
   const act = btn.dataset.act;
   if (act === "addweek") {
@@ -2791,10 +2912,12 @@ $("#plan").addEventListener("click", e => {
     const start = last ? addDays(last, 7) : mondayOf(todayISO());
     PLAN.weeks.push({start, focus: "", target_h: 0, sessions: []});
     sortWeeks(PLAN);
+    PLAN_SEL = start;
   } else if (act === "delweek") {
     const wi = +btn.dataset.w, w = PLAN.weeks[wi];
     PLAN.weeks.splice(wi, 1);
-    toast(`Semaine du ${fmtDM(w.start)} supprimée`, "Annuler", () => { PLAN.weeks.splice(wi, 0, w); saveDraft(); renderPlan(); renderToday(); });
+    PLAN_SEL = PLAN.weeks[Math.min(wi, PLAN.weeks.length - 1)]?.start ?? null;
+    toast(`Semaine du ${fmtDM(w.start)} supprimée`, "Annuler", () => { PLAN.weeks.splice(wi, 0, w); PLAN_SEL = w.start; saveDraft(); renderPlan(); renderToday(); });
   } else if (act === "add") {
     const wi = +btn.dataset.w, week = PLAN.weeks[wi];
     const last = week.sessions.map(s => s.date).sort().at(-1);
@@ -2958,7 +3081,7 @@ $("#showPass").addEventListener("click", () => {
 });
 
 $("#lock").addEventListener("click", () => {
-  PASS = null; DATA = null; PLAN_FILE = null; PLAN = null; SECRETS = {}; HEALTH = null; H_BY_DAY = new Map();
+  PASS = null; DATA = null; PLAN_FILE = null; PLAN = null; PLAN_SEL = null; SECRETS = {}; HEALTH = null; H_BY_DAY = new Map();
   resetCoach(); clearLib(); resetKpi();
   $("#app").hidden = true; $("#gate").hidden = false;
   $("#pass").value = ""; $("#pass").focus();
@@ -3244,7 +3367,7 @@ function coachContext(compact = false) {
       fc_max: opt(a.hr_max), watts_moy: a.w_avg ? Math.round(a.w_avg) : undefined})),
     plan: {
       saison: PLAN.season, regles: PLAN.rules,
-      semaines: PLAN.weeks.map(w => ({semaine: w.start, focus: w.focus, cible_h: w.target_h, seances: w.sessions.map(s => ({
+      semaines: PLAN.weeks.map(w => ({semaine: w.start, bloc: w.block, focus: w.focus, cible_h: w.target_h, seances: w.sessions.map(s => ({
         id: s.id, date: s.date, sport: s.sport, type_seance: s.type, titre: s.title, duree_min: s.duration_min, consigne: s.notes || undefined,
         annulee: s.skip || undefined, modele: s.model || undefined, statut: statusFor(s).label, realise_min: actualFor(s).min}))})),
       analyses_recentes: [...PLAN.analysis].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
@@ -3269,7 +3392,7 @@ function coachContextCompact(today, opt) {
         opt(a.km) ?? null, opt(a.elev) ?? null, opt(a.re) ?? null, a.hr_avg ? Math.round(a.hr_avg) : null, opt(a.hr_max) ?? null, a.w_avg ? Math.round(a.w_avg) : null])},
     plan: {
       saison: PLAN.season, regles: PLAN.rules,
-      semaines: PLAN.weeks.filter(w => w.start >= addDays(mondayOf(today), -7)).map(w => ({semaine: w.start, focus: w.focus, cible_h: w.target_h, seances: w.sessions.map(s => ({
+      semaines: PLAN.weeks.filter(w => w.start >= addDays(mondayOf(today), -7)).map(w => ({semaine: w.start, bloc: w.block, focus: w.focus, cible_h: w.target_h, seances: w.sessions.map(s => ({
         id: s.id, date: s.date, sport: s.sport, type_seance: s.type, titre: s.title, duree_min: s.duration_min, consigne: s.notes || undefined,
         annulee: s.skip || undefined, modele: s.model || undefined, statut: statusFor(s).label, realise_min: actualFor(s).min}))})),
       semaines_passees_non_detaillees: PLAN.weeks.filter(w => w.start < addDays(mondayOf(today), -7)).length || undefined,
